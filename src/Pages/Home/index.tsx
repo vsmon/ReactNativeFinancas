@@ -1,11 +1,20 @@
 import React, {useEffect, useState} from 'react';
-import {View, Text, FlatList, StyleSheet} from 'react-native';
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  Pressable,
+  ScrollView,
+  Alert,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Realm from '../../database/realm/schemas';
 
-import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {IStackNavigationProps} from '../../Routes/Stack';
 import {useIsFocused} from '@react-navigation/native';
+
+import CardContainer from '../../Components/CardContainer';
 
 export interface IValues {
   key?: string;
@@ -18,74 +27,22 @@ export interface IValues {
   dateEnd: Date;
 }
 
-interface IValuesByMonth {
-  id: number;
-  date: Date;
-  description: string;
-  value: number;
-}
-
-const mockValues: IValues[] = [
-  {
-    id: 1,
-    date: new Date(),
-    type: 'outflow',
-    description: 'Apto',
-    value: 620.2,
-    recurrent: true,
-    dateEnd: new Date(),
-  },
-  {
-    id: 2,
-    date: new Date(),
-    type: 'outflow',
-    description: 'Condominio',
-    value: 335.0,
-    recurrent: true,
-    dateEnd: new Date(),
-  },
-  {
-    id: 3,
-    date: new Date(),
-    type: 'outflow',
-    recurrent: true,
-    value: 100.0,
-    description: 'Internet',
-    dateEnd: new Date(),
-  },
-  {
-    id: 4,
-    date: new Date(),
-    type: 'outflow',
-    recurrent: true,
-    value: -100.0,
-    description: 'Internet',
-    dateEnd: new Date(),
-  },
-];
-
 export default function Home({navigation}: IStackNavigationProps) {
   const [allValuesList, setAllValuesList] = useState<IValues[]>();
   const [groupValues, setGroupValues] = useState<IValues[]>();
   const [balance, setBalance] = useState<number>(0);
+  const [outflowTotal, setOutflowTotal] = useState<number>(0);
+  const [inflowTotal, setInflowTotal] = useState<number>(0);
   const [groupTitle, setGroupTitle] = useState<string>('');
 
   useEffect(() => {
     getAllValues();
+    sumOutFlow();
+    sumInFlow();
+    getValuesByYear();
     sumAllValues();
-    getValuesByMonth();
   }, [useIsFocused()]);
 
-  function addValue(Values: IValues) {
-    /* mockValues.push(Values);
-    setValuesList([...mockValues]); */
-
-    Realm.write(() => {
-      Realm.create('Values', Values);
-    });
-    getAllValues();
-    sumAllValues();
-  }
   function getAllValues() {
     const values: any = Realm.objects('Values');
     setAllValuesList([...values]);
@@ -96,16 +53,38 @@ export default function Home({navigation}: IStackNavigationProps) {
     Realm.write(() => {
       Realm.delete(values);
     });
+    Alert.alert('Deleted...');
+  }
+  function sumOutFlow() {
+    const transactions: IValues[] | any = Realm.objects<IValues>('Values');
+
+    const sumOutflow = transactions.reduce(
+      (accum: number, next: IValues) =>
+        next.value < 0 ? accum + next.value : accum,
+      0,
+    );
+    setOutflowTotal(sumOutflow);
+  }
+
+  function sumInFlow() {
+    const transactions: IValues[] | any = Realm.objects<IValues>('Values');
+
+    const sumInflow = transactions.reduce(
+      (accum: number, next: IValues) =>
+        next.value > 0 ? accum + next.value : accum,
+      0,
+    );
+    setInflowTotal(sumInflow);
   }
 
   function sumAllValues() {
     const transactions: IValues[] | any = Realm.objects<IValues>('Values');
     const sumTransactions = transactions.reduce(
-      (accum: any, next: any) => accum + next.value,
+      (accum: number, next: IValues) => accum + next.value,
       0,
     );
 
-    setBalance(sumTransactions);
+    setBalance(sumTransactions.toFixed(2));
   }
 
   function getValuesByMonth() {
@@ -159,102 +138,114 @@ export default function Home({navigation}: IStackNavigationProps) {
 
   return (
     <View style={{flex: 1}}>
-      <View style={styles.balanceContainer}>
-        <Text>Saldo</Text>
-        <Text style={styles.textBalance}>
-          {/* R$ {mockValues.reduce((prev, next) => prev + next.value, 0)} */}
-          {balance}
-        </Text>
-      </View>
+      <Pressable
+        onPress={() => navigation.navigate('Transactions', {type: 'inflow'})}>
+        <CardContainer type="inflow">
+          <Text>Total Receitas</Text>
+          <Text style={styles.textValuesBalance}>R$ {inflowTotal}</Text>
+        </CardContainer>
+      </Pressable>
+      <Pressable
+        onPress={() => navigation.navigate('Transactions', {type: 'outflow'})}>
+        <CardContainer type="outflow">
+          <Text>Total Despesas</Text>
+          <Text style={styles.textValuesBalance}>R$ {outflowTotal}</Text>
+        </CardContainer>
+      </Pressable>
+      <Pressable>
+        <CardContainer>
+          <Text>Saldo</Text>
+          <Text
+            style={[
+              styles.textValuesBalance,
+              {color: balance < 0 ? 'red' : '#0009'},
+            ]}>
+            R$ {balance}
+          </Text>
+        </CardContainer>
+      </Pressable>
       <Icon
         style={{alignSelf: 'flex-end'}}
         name="plus"
         color="#000"
         size={35}
-        onPress={
-          () => navigation.navigate('InsertTransaction')
-          /* addValue({
-            id: Realm.objects('Values').length + 1,
-            date: new Date('2025-10-14'),
-            type: 'outflow',
-            recurrent: true,
-            value: 100.0,
-            description: 'Test3', //+ new Date().getSeconds().toString(),
-            dateEnd: new Date(),
-          }) */
-        }
+        onPress={() => navigation.navigate('Transactions')}
       />
       <View style={{flexDirection: 'row'}}>
-        <Icon
-          name="reload"
-          size={30}
-          color={'red'}
-          onPress={getValuesByMonth}
-        />
-        <Icon
-          name="reload"
-          size={30}
-          color={'blue'}
-          onPress={getValuesByYear}
-        />
-        <Icon name="delete" size={30} color={'red'} onPress={deleteAllValues} />
-        <Icon
-          name="page-next"
-          size={30}
-          color={'red'}
-          onPress={() => navigation.navigate('InsertTransaction')}
-        />
+        <Pressable
+          style={[
+            styles.groupBy,
+            {
+              backgroundColor: groupTitle === 'By Month' ? 'gray' : 'lightgray',
+            },
+          ]}
+          onPress={getValuesByMonth}>
+          <Text>By Month</Text>
+        </Pressable>
+        <Pressable
+          style={[
+            styles.groupBy,
+            {
+              backgroundColor: groupTitle === 'By Year' ? 'gray' : 'lightgray',
+            },
+          ]}
+          onPress={getValuesByYear}>
+          <Text>By Year</Text>
+        </Pressable>
+        <Pressable
+          disabled={false}
+          style={styles.groupBy}
+          onPress={getValuesByYear}>
+          <Text>Delete All</Text>
+          <Icon
+            name="delete"
+            size={30}
+            color={'red'}
+            onPress={() =>
+              Alert.alert('Excluir todos', 'Deseja excluir todos registros?', [
+                {text: 'OK', onPress: deleteAllValues},
+                {
+                  text: 'Cancelar',
+                  style: 'cancel',
+                  onPress: () => console.log('canceled'),
+                },
+              ])
+            }
+          />
+        </Pressable>
       </View>
-      <View>
-        <Text>{groupTitle}</Text>
-        <FlatList
-          horizontal={true}
-          data={groupValues}
-          renderItem={({item, index}) => (
-            <View style={styles.itemContainer}>
-              <Text>Data</Text>
-              <Text style={styles.textValues}>{`${
-                item.date.getMonth() + 1
-              }/${item.date.getFullYear()}`}</Text>
-              <Text>Descrição</Text>
-              <Text style={styles.textValues}>{item.description}</Text>
-              <Text>Valor</Text>
-              <Text style={styles.textValues}>R$ {item.value}</Text>
-            </View>
-          )}
-          keyExtractor={key => String(key.id)}
-        />
-      </View>
-      <View style={{flex: 1}}>
-        <FlatList
-          data={allValuesList}
-          renderItem={({item}) => (
-            <View style={styles.itemContainer}>
-              <Text>{item.id}</Text>
-              <Text>Data</Text>
-              <Text style={styles.textValues}>
-                {item.date.toLocaleDateString()}
-              </Text>
-              <Text>Descrição</Text>
-              <Text style={styles.textValues}>{item.description}</Text>
-              <Text>Valor</Text>
-              <Text style={styles.textValues}>R$ {item.value}</Text>
-            </View>
-          )}
-          keyExtractor={key => String(key.id)}
-        />
-      </View>
+      <FlatList
+        //numColumns={3}
+        horizontal={true}
+        data={groupValues}
+        renderItem={({item, index}) => (
+          <CardContainer type={item.value < 0 ? 'outflow' : 'inflow'}>
+            <Text>Data</Text>
+            <Text style={styles.textValuesGroup}>{`${
+              item.date.getMonth() + 1
+            }/${item.date.getFullYear()}`}</Text>
+            <Text>Descrição</Text>
+            <Text style={styles.textValuesGroup}>{item.description}</Text>
+            <Text>Valor</Text>
+            <Text style={styles.textValuesGroup}>
+              R$ {item.value.toFixed(2)}
+            </Text>
+            <Text style={styles.textValuesGroup}>Type {item.type}</Text>
+          </CardContainer>
+        )}
+        keyExtractor={key => String(key.id)}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  textValues: {
+  textValuesGroup: {
     fontSize: 18,
     fontWeight: 'bold',
+    color: '#0008',
   },
   itemContainer: {
-    flex: 1,
     justifyContent: 'center',
     padding: 20,
     margin: 5,
@@ -270,5 +261,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'lightgray',
     borderRadius: 10,
   },
-  textBalance: {fontSize: 38},
+  textValuesBalance: {fontSize: 38, color: '#0008'},
+  groupBy: {
+    backgroundColor: 'lightgray',
+    borderRadius: 25,
+    padding: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    margin: 5,
+  },
 });

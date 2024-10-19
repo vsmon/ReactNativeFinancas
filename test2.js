@@ -44,4 +44,9 @@ item.forEach(it => {
   }
 });
 
-console.log(listSoma);
+const date1 = new Date();
+const date2 = new Date('2024-11-28T18:30:44.730Z');
+
+const diff = Math.abs(date2 - date1);
+
+console.log(new Date(date2) + 10);

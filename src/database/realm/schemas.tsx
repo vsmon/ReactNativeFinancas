@@ -11,6 +11,7 @@ const Values = {
     recurrent: 'bool',
     dateEnd: 'date',
   },
+  primaryKey: 'id',
 };
 
 const realm = new Realm({

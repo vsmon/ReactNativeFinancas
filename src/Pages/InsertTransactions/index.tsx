@@ -21,7 +21,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {Picker} from '@react-native-picker/picker';
 import DatePicker from 'react-native-date-picker';
 import {UpdateMode} from 'realm';
-import {RouteProp} from '@react-navigation/native';
+import {RouteProp, useRoute} from '@react-navigation/native';
 
 export default function InsertTransaction({
   navigation,
@@ -102,6 +102,7 @@ export default function InsertTransaction({
   }
 
   function handleEditValues() {
+    //const route: RouteProp<{params: { values: IValues }}> = useRoute()
     if (route.params) {
       const {date, type, description, value, recurrent, dateEnd}: IValues =
         route.params.values;
@@ -258,6 +259,7 @@ const styles = StyleSheet.create({
   },
   textLabel: {
     marginLeft: 10,
+    color: '#000',
     //marginBottom: 0,
   },
 });

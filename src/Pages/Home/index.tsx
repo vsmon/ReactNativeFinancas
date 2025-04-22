@@ -16,6 +16,8 @@ import {useIsFocused} from '@react-navigation/native';
 
 import CardContainer from '../../Components/CardContainer';
 
+import {getBitcoinAmountBlockCypher, getBitcoinPrice} from '../../Services';
+
 export interface IValues {
   key?: string;
   id: number;
@@ -30,22 +32,50 @@ export interface IValues {
 export default function Home({navigation}: IStackNavigationProps) {
   const [allValuesList, setAllValuesList] = useState<IValues[]>();
   const [groupValues, setGroupValues] = useState<IValues[]>();
+  const [yearList, setYearList] = useState<number[]>();
   const [balance, setBalance] = useState<number>(0);
   const [outflowTotal, setOutflowTotal] = useState<number>(0);
   const [inflowTotal, setInflowTotal] = useState<number>(0);
   const [groupTitle, setGroupTitle] = useState<string>('');
+  const [selectedYear, setSelectedYear] = useState<number>(
+    new Date().getFullYear(),
+  );
 
   useEffect(() => {
+    loadValues();
+  }, [useIsFocused()]);
+
+  useEffect(() => {
+    loadValues();
+  }, [selectedYear]);
+
+  function loadValues() {
     getAllValues();
     sumOutFlow();
     sumInFlow();
     getValuesByYear();
     sumAllValues();
-  }, [useIsFocused()]);
+    groupByYear();
+  }
 
   function getAllValues() {
     const values: any = Realm.objects('Values');
     setAllValuesList([...values]);
+    //console.log('values', values);
+  }
+
+  function getValuesByYearDB(): IValues[] {
+    const transactions: IValues[] | any = Realm.objects<IValues>(
+      'Values',
+    ).filtered(
+      `
+  date >= $0 AND date < $1
+`,
+      new Date(`${selectedYear}-01-01T00:00:00.000Z`),
+      new Date(`${selectedYear + 1}-01-01T00:00:00.000Z`),
+    );
+
+    return transactions;
   }
 
   function deleteAllValues() {
@@ -56,7 +86,7 @@ export default function Home({navigation}: IStackNavigationProps) {
     Alert.alert('Deleted...');
   }
   function sumOutFlow() {
-    const transactions: IValues[] | any = Realm.objects<IValues>('Values');
+    const transactions: IValues[] | any = getValuesByYearDB();
 
     const sumOutflow = transactions.reduce(
       (accum: number, next: IValues) =>
@@ -67,7 +97,7 @@ export default function Home({navigation}: IStackNavigationProps) {
   }
 
   function sumInFlow() {
-    const transactions: IValues[] | any = Realm.objects<IValues>('Values');
+    const transactions: IValues[] | any = getValuesByYearDB();
 
     const sumInflow = transactions.reduce(
       (accum: number, next: IValues) =>
@@ -78,7 +108,7 @@ export default function Home({navigation}: IStackNavigationProps) {
   }
 
   function sumAllValues() {
-    const transactions: IValues[] | any = Realm.objects<IValues>('Values');
+    const transactions: IValues[] | any = getValuesByYearDB();
     const sumTransactions = transactions.reduce(
       (accum: number, next: IValues) => accum + next.value,
       0,
@@ -87,16 +117,38 @@ export default function Home({navigation}: IStackNavigationProps) {
     setBalance(sumTransactions.toFixed(2));
   }
 
+  function groupByYear() {
+    const values: any = Realm.objects('Values');
+    const groupByYear = values?.reduce(
+      (acc: number[], item: {date: {getFullYear: () => number}}) => {
+        const year: number = item.date.getFullYear(); // Extrai o ano da data
+
+        const yearIndex = acc.findIndex(
+          (yearItem: number) => yearItem === year,
+        );
+
+        if (!acc[yearIndex]) {
+          acc.push(year);
+        }
+
+        return acc;
+      },
+      [] as number[],
+    );
+    setYearList(groupByYear);
+    console.log('groupByYear', groupByYear);
+  }
+
   function getValuesByMonth() {
-    const transactions: any = Realm.objects<IValues>('Values');
-    const listResult: IValues[] = [];
+    const transactions: any = getValuesByYearDB();
+    const listByMonth: IValues[] = [];
 
     transactions.forEach((transaction: IValues) => {
       const key: string = `${
         transaction.date.getMonth() + 1
       }${transaction.date.getFullYear()}${transaction.description}`;
 
-      const existingItem = listResult.find(item => {
+      const existingItem = listByMonth.find(item => {
         const keyItem: string = `${
           item.date.getMonth() + 1
         }${item.date.getFullYear()}${item.description}`;
@@ -106,16 +158,27 @@ export default function Home({navigation}: IStackNavigationProps) {
       if (existingItem) {
         existingItem.value += transaction.value;
       } else {
-        listResult.push({...transaction});
+        listByMonth.push({...transaction});
       }
     });
+
+    const sumInFlowByMonth: number = listByMonth.reduce((accum, curr) => {
+      accum += curr.value > 0 ? curr.value : 0;
+      return accum;
+    }, 0);
+    const sumOutFlowByMonth: number = listByMonth.reduce((accum, curr) => {
+      accum += curr.value < 0 ? curr.value : 0;
+      return accum;
+    }, 0);
     setGroupTitle('By Month');
-    setGroupValues(listResult);
-    return listResult;
+    setGroupValues(listByMonth);
+    setInflowTotal(sumInFlowByMonth);
+    setOutflowTotal(sumOutFlowByMonth);
+    return listByMonth;
   }
 
   function getValuesByYear() {
-    const transactions: any = Realm.objects<IValues>('Values');
+    const transactions: any = getValuesByYearDB();
     const listByYear: IValues[] = [];
 
     transactions.forEach((transaction: IValues) => {
@@ -131,39 +194,94 @@ export default function Home({navigation}: IStackNavigationProps) {
         listByYear[transactionIndex].value += transaction.value;
       }
     });
+    const sumInFlowByYear: number = listByYear.reduce((accum, curr) => {
+      accum += curr.value > 0 ? curr.value : 0;
+      return accum;
+    }, 0);
+    const sumOutFlowByYear: number = listByYear.reduce((accum, curr) => {
+      accum += curr.value < 0 ? curr.value : 0;
+      return accum;
+    }, 0);
+
     setGroupTitle('By Year');
     setGroupValues(listByYear);
+    setInflowTotal(sumInFlowByYear);
+    setOutflowTotal(sumOutFlowByYear);
+
     return listByYear;
+  }
+
+  async function getBitcoin() {
+    try {
+      const transactions: IValues[] | any = Realm.objects<IValues>('Values');
+
+      const {address, currency, investedAmount} = transactions;
+
+      const bitcoinPrice: number = await getBitcoinPrice(currency);
+
+      const bitcoinAmount: number = await getBitcoinAmountBlockCypher(
+        address.join(';'),
+      );
+
+      const bitcoinBalance: number = bitcoinAmount * bitcoinPrice;
+
+      const profit: number = bitcoinBalance - investedAmount;
+
+      /*const bitcoinAmount: number[] = await getBalances(address);
+       const bitcoinBalance: number = bitcoinAmount.reduce((prev, accum) => {
+        accum += prev;
+        return accum * bitcoinPrice;
+      }); */
+
+      /* setBitcoinPrice(bitcoinPrice);
+      setBitcoinBalance(bitcoinBalance);
+      setBitcoinProfit(profit);
+
+      setBitcoinPriceVariation(
+        CalculateVariation(bitcoinPrice, prevBitcoinPrice.current),
+      );
+      setBitcoinBalanceVariation(
+        CalculateVariation(bitcoinBalance, prevBitcoinBalance.current),
+      );
+      setBitcoinProfitVariation(
+        CalculateVariation(profit, prevBitcoinProfit.current),
+      );
+      setIsDarkMode(darkMode); */
+    } catch (error) {
+      console.log('Error get Data', error);
+    }
   }
 
   return (
     <View style={{flex: 1}}>
-      <Pressable
-        onPress={() => navigation.navigate('Transactions', {type: 'inflow'})}>
-        <CardContainer type="inflow">
-          <Text>Total Receitas</Text>
-          <Text style={styles.textValuesBalance}>R$ {inflowTotal}</Text>
-        </CardContainer>
-      </Pressable>
-      <Pressable
-        onPress={() => navigation.navigate('Transactions', {type: 'outflow'})}>
-        <CardContainer type="outflow">
-          <Text>Total Despesas</Text>
-          <Text style={styles.textValuesBalance}>R$ {outflowTotal}</Text>
-        </CardContainer>
-      </Pressable>
-      <Pressable>
-        <CardContainer>
-          <Text>Saldo</Text>
-          <Text
-            style={[
-              styles.textValuesBalance,
-              {color: balance < 0 ? 'red' : '#0009'},
-            ]}>
-            R$ {balance}
-          </Text>
-        </CardContainer>
-      </Pressable>
+      <CardContainer
+        type="inflow"
+        onPress={() =>
+          navigation.navigate('Transactions', {type: 'inflow', selectedYear})
+        }>
+        <Text style={styles.textTitle}>Total Receitas</Text>
+        <Text style={styles.textValuesBalance}>R$ {inflowTotal}</Text>
+      </CardContainer>
+
+      <CardContainer
+        type="outflow"
+        onPress={() =>
+          navigation.navigate('Transactions', {type: 'outflow', selectedYear})
+        }>
+        <Text style={styles.textTitle}>Total Despesas</Text>
+        <Text style={styles.textValuesBalance}>R$ {outflowTotal}</Text>
+      </CardContainer>
+
+      <CardContainer>
+        <Text style={styles.textTitle}>Saldo</Text>
+        <Text
+          style={[
+            styles.textValuesBalance,
+            {color: balance < 0 ? 'red' : '#0009'},
+          ]}>
+          R$ {balance}
+        </Text>
+      </CardContainer>
       <Icon
         style={{alignSelf: 'flex-end'}}
         name="plus"
@@ -171,6 +289,29 @@ export default function Home({navigation}: IStackNavigationProps) {
         size={35}
         onPress={() => navigation.navigate('Transactions')}
       />
+      <View style={{flexDirection: 'row'}}>
+        {yearList?.map(year => {
+          return (
+            <Pressable
+              key={year}
+              onPress={() => {
+                setSelectedYear(year);
+              }}>
+              <View
+                key={year}
+                style={[
+                  styles.groupBy,
+                  {
+                    backgroundColor:
+                      selectedYear === year ? 'gray' : 'lightgray',
+                  },
+                ]}>
+                <Text style={styles.textTitle}>{year}</Text>
+              </View>
+            </Pressable>
+          );
+        })}
+      </View>
       <View style={{flexDirection: 'row'}}>
         <Pressable
           style={[
@@ -180,7 +321,7 @@ export default function Home({navigation}: IStackNavigationProps) {
             },
           ]}
           onPress={getValuesByMonth}>
-          <Text>By Month</Text>
+          <Text style={styles.textTitle}>By Month</Text>
         </Pressable>
         <Pressable
           style={[
@@ -190,7 +331,7 @@ export default function Home({navigation}: IStackNavigationProps) {
             },
           ]}
           onPress={getValuesByYear}>
-          <Text>By Year</Text>
+          <Text style={styles.textTitle}>By Year</Text>
         </Pressable>
         <Pressable
           disabled={false}
@@ -269,5 +410,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     margin: 5,
+  },
+  textTitle: {
+    color: '#0008',
+    fontSize: 18,
+    textAlign: 'center',
   },
 });

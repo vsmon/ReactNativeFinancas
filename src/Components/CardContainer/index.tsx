@@ -1,12 +1,14 @@
 import React from 'react';
-import {View, Text, StyleSheet} from 'react-native';
+import {View, Text, StyleSheet, Pressable} from 'react-native';
 
 interface ICardContainer {
   children: React.ReactNode;
   type?: 'inflow' | 'outflow' | 'balance' | string;
+  onPress?: () => void; // Optional onPress function
 }
 
 export default function CardContainer({
+  onPress,
   children,
   type,
   ...rest
@@ -24,7 +26,9 @@ export default function CardContainer({
               : '#018011',
         },
       ]}>
-      {children}
+      <Pressable onPress={onPress} {...rest}>
+        {children}
+      </Pressable>
     </View>
   );
 }
@@ -39,5 +43,5 @@ const styles = StyleSheet.create({
     backgroundColor: 'lightgray',
     borderRadius: 10,
   },
-  textCard: {fontSize: 38},
+  textCard: {fontSize: 38, color: '#0008'},
 });

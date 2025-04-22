@@ -31,9 +31,15 @@ export default function Transactions({
 
   function getValuesByTypeTransaction() {
     if (route.params) {
-      const {type}: IValues = route.params;
-      const values: any = Realm.objects('Values').filtered(`type = '${type}'`);
-      setAllValuesList([...values]);
+      if ('type' in route.params) {
+        const {type, selectedYear} = route.params;
+        const values: any = Realm.objects('Values').filtered(
+          `type = '${type}' AND date >= $0 AND date < $1`,
+          new Date(`${selectedYear}-01-01T00:00:00.000Z`),
+          new Date(`${selectedYear + 1}-01-01T00:00:00.000Z`),
+        );
+        setAllValuesList([...values]);
+      }
     }
   }
 
@@ -44,6 +50,7 @@ export default function Transactions({
   return (
     <View style={{flex: 1}}>
       <Icon
+        style={{alignSelf: 'flex-end'}}
         name="plus"
         size={50}
         color={'#000'}
@@ -59,13 +66,13 @@ export default function Transactions({
                 onLongPress={() => setIsUpdating(!isUpdating)}>
                 <CardContainer type={item.value < 0 ? 'outflow' : 'inflow'}>
                   <Text>{item.id}</Text>
-                  <Text>Data</Text>
+                  <Text style={styles.textTitle}>Data</Text>
                   <Text style={styles.textValues}>
                     {item.date.toLocaleDateString()}
                   </Text>
-                  <Text>Descrição</Text>
+                  <Text style={styles.textTitle}>Descrição</Text>
                   <Text style={styles.textValues}>{item.description}</Text>
-                  <Text>Valor</Text>
+                  <Text style={styles.textTitle}>Valor</Text>
                   <Text style={styles.textValues}>R$ {item.value}</Text>
 
                   {isUpdating ? (
@@ -104,6 +111,12 @@ const styles = StyleSheet.create({
   textValues: {
     fontSize: 18,
     fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  textTitle: {
+    fontSize: 18,
+    textAlign: 'center',
+    color: '#0008',
   },
   itemContainer: {
     flex: 1,

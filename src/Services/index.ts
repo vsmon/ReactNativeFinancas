@@ -1,4 +1,4 @@
-async function getBitcoinPrice(currency: string): Promise<number> {
+async function getBitcoinPrice(currency: string = 'USD'): Promise<number> {
   const URL = `https://api.coinbase.com/v2/prices/BTC-${currency}/buy`;
 
   try {
@@ -44,16 +44,22 @@ async function getBitcoinAmountBlockChain(address: string): Promise<number> {
 
 async function getBitcoinAmountBlockCypher(address: string): Promise<number> {
   const URL = `https://api.blockcypher.com/v1/btc/main/addrs/${address}`;
+  console.log('URL', URL);
   try {
     const response = await fetch(URL);
     if (response.status !== 200) {
       throw new Error('Error to get wallet values!');
     }
     const data = await response.json();
+
+    console.log('data', data);
+
     const sumBalance = data.reduce(
       (accum: any, curr: any) => (accum += curr.balance ? curr.balance : 0),
       0,
     );
+
+    /* const sumBalance = data.balance; */
     const balanceSatoshis = sumBalance;
     const balanceBitcoin = sumBalance / 100000000; // 1 Bitcoin = 100,000,000 Satoshis;;
     return balanceBitcoin;

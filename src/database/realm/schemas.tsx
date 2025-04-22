@@ -18,12 +18,14 @@ const Values = {
 const BitcoinData = {
   name: 'BitcoinData',
   properties: {
+    id: 'int',
     address: 'string',
     price: 'double',
     balance: 'double',
     profit: 'double',
     currency: 'string',
   },
+  primaryKey: 'id',
 };
 
 const realm = new Realm({

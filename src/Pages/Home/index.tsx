@@ -27,6 +27,16 @@ export interface IValues {
   value: number;
   recurrent: boolean;
   dateEnd: Date;
+  recurrentId: number;
+}
+
+export interface IBitcoinData {
+  id: number;
+  address: string;
+  price: number;
+  balance: number;
+  profit: number;
+  currency: string;
 }
 
 export default function Home({navigation}: IStackNavigationProps) {
@@ -56,6 +66,7 @@ export default function Home({navigation}: IStackNavigationProps) {
     getValuesByYear();
     sumAllValues();
     groupByYear();
+    getBitcoin();
   }
 
   function getAllValues() {
@@ -213,19 +224,28 @@ export default function Home({navigation}: IStackNavigationProps) {
 
   async function getBitcoin() {
     try {
-      const transactions: IValues[] | any = Realm.objects<IValues>('Values');
+      const transactions: IBitcoinData[] | any =
+        Realm.objects<IBitcoinData>('BitcoinData');
 
-      const {address, currency, investedAmount} = transactions;
+      const {address, currency}: IBitcoinData =
+        transactions[transactions.length - 1];
+      console.log(transactions);
 
-      const bitcoinPrice: number = await getBitcoinPrice(currency);
+      if (transactions.length > 0) {
+        console.log('passei');
+        const bitcoinPrice: number = await getBitcoinPrice(currency);
+        console.log(address);
 
-      const bitcoinAmount: number = await getBitcoinAmountBlockCypher(
-        address.join(';'),
-      );
+        const bitcoinAmount: number = await getBitcoinAmountBlockCypher(
+          address,
+        );
 
-      const bitcoinBalance: number = bitcoinAmount * bitcoinPrice;
+        const bitcoinBalance: number = bitcoinAmount * bitcoinPrice;
 
-      const profit: number = bitcoinBalance - investedAmount;
+        console.log('bitcoinBalance', bitcoinBalance);
+      }
+
+      //const profit: number = bitcoinBalance - investedAmount;
 
       /*const bitcoinAmount: number[] = await getBalances(address);
        const bitcoinBalance: number = bitcoinAmount.reduce((prev, accum) => {

@@ -1,8 +1,37 @@
 import React, {useState} from 'react';
-import {View, Text, StyleSheet, TextInput} from 'react-native';
+import {View, Text, StyleSheet, TextInput, Pressable} from 'react-native';
+import Realm from '../../database/realm/schemas';
+import {IBitcoinData, IValues} from '../Home';
+import toastMessage from '../../Utils/ToastMessage';
 
 export default function Settings() {
   const [bitcoinAddress, setBitcoinAddress] = useState<string>('');
+  const [bitcoinCurrency, setBitcoinCurrency] = useState<string>('USD');
+
+  function saveDB(values: IBitcoinData) {
+    console.log('NEW VALUES===============', values);
+    try {
+      Realm.write(() => {
+        Realm.create('BitcoinData', values);
+      });
+      toastMessage('Saved!');
+    } catch (error) {
+      console.log(error);
+      toastMessage(`Error when saving data! ${error}`);
+    }
+  }
+
+  function handleSave() {
+    const values: IBitcoinData = {
+      id: Realm.objects('BitcoinData').length + new Date().getTime(),
+      address: bitcoinAddress,
+      price: 0,
+      balance: 0,
+      profit: 0,
+      currency: bitcoinCurrency,
+    };
+    saveDB(values);
+  }
 
   return (
     <View>
@@ -13,11 +42,21 @@ export default function Settings() {
       <TextInput
         style={styles.input}
         placeholder="Bitcoin addresses..."
-        //placeholderTextColor="#000"
         value={bitcoinAddress}
         onChangeText={text => setBitcoinAddress(text)}
         autoCapitalize="none"
       />
+      <Text style={styles.textLabel}>Currency</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Currency..."
+        value={bitcoinCurrency}
+        onChangeText={text => setBitcoinCurrency(text)}
+        autoCapitalize="none"
+      />
+      <Pressable onPress={() => handleSave()}>
+        <Text>Save</Text>
+      </Pressable>
     </View>
   );
 }

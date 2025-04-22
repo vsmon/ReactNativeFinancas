@@ -40,13 +40,16 @@ export default function InsertTransaction({
   const [openEndDatePicker, setOpenEndDatePicker] = useState<boolean>(false);
 
   function addValue(values: IValues) {
-    console.log('NEW VALUES===============', values);
     values.id = Realm.objects('Values').length + new Date().getTime();
+    values.recurrentId = values.recurrent
+      ? Realm.objects('Values').length + new Date().getTime()
+      : 0;
     (values.value =
       type === 'outflow' ? parseFloat(value) * -1 : parseFloat(value)),
       Realm.write(() => {
         Realm.create('Values', values);
       });
+    console.log('NEW VALUES===============', values);
     ToastAndroid.show('Transação Adicionada!', ToastAndroid.SHORT);
   }
   function addRecurrentValue(value: IValues) {
@@ -66,6 +69,8 @@ export default function InsertTransaction({
         newDate.setMonth(oldDate.getMonth() + 1);
 
         value.date = new Date(newDate);
+        value.recurrentId =
+          Realm.objects('Values').length + new Date().getTime();
         addValue(value);
 
         setRefreshing(!refreshing);

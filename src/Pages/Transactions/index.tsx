@@ -57,47 +57,46 @@ export default function Transactions({
         onPress={() => navigation.navigate('InsertTransaction')}
       />
       <View style={{flex: 1}}>
-        <View style={{marginTop: 5}}>
+        <View style={{marginTop: 5, flex: 1}}>
           <FlatList
             data={allValuesList?.sort((a, b) => b.id - a.id)}
             renderItem={({item}) => (
-              <Pressable
+              <CardContainer
+                type={item.value < 0 ? 'outflow' : 'inflow'}
                 onPress={() => Alert.alert(String(item.id))}
                 onLongPress={() => setIsUpdating(!isUpdating)}>
-                <CardContainer type={item.value < 0 ? 'outflow' : 'inflow'}>
-                  <Text>{item.id}</Text>
-                  <Text style={styles.textTitle}>Data</Text>
-                  <Text style={styles.textValues}>
-                    {item.date.toLocaleDateString()}
-                  </Text>
-                  <Text style={styles.textTitle}>Descrição</Text>
-                  <Text style={styles.textValues}>{item.description}</Text>
-                  <Text style={styles.textTitle}>Valor</Text>
-                  <Text style={styles.textValues}>R$ {item.value}</Text>
+                <Text>{item.id}</Text>
+                <Text style={styles.textTitle}>Data</Text>
+                <Text style={styles.textValues}>
+                  {item.date.toLocaleDateString()}
+                </Text>
+                <Text style={styles.textTitle}>Descrição</Text>
+                <Text style={styles.textValues}>{item.description}</Text>
+                <Text style={styles.textTitle}>Valor</Text>
+                <Text style={styles.textValues}>R$ {item.value}</Text>
 
-                  {isUpdating ? (
-                    <View style={{marginTop: 10, flexDirection: 'row'}}>
-                      <Icon
-                        name="delete"
-                        size={35}
-                        color={'red'}
-                        onPress={() => deleteById(item.id)}
-                      />
-                      <Icon
-                        name="application-edit"
-                        size={35}
-                        color={'red'}
-                        onPress={() =>
-                          navigation.navigate('InsertTransaction', {
-                            values: item,
-                            edit: true,
-                          })
-                        }
-                      />
-                    </View>
-                  ) : null}
-                </CardContainer>
-              </Pressable>
+                {isUpdating ? (
+                  <View style={{marginTop: 10, flexDirection: 'row'}}>
+                    <Icon
+                      name="delete"
+                      size={35}
+                      color={'red'}
+                      onPress={() => deleteById(item.id)}
+                    />
+                    <Icon
+                      name="application-edit"
+                      size={35}
+                      color={'red'}
+                      onPress={() =>
+                        navigation.navigate('InsertTransaction', {
+                          values: item,
+                          edit: true,
+                        })
+                      }
+                    />
+                  </View>
+                ) : null}
+              </CardContainer>
             )}
             keyExtractor={key => String(key.id)}
           />

@@ -11,6 +11,7 @@ const Values = {
     recurrent: 'bool',
     dateEnd: 'date',
     recurrentId: 'int',
+    assetType: 'string',
   },
   primaryKey: 'id',
 };

@@ -5,31 +5,33 @@ interface ICardContainer {
   children: React.ReactNode;
   type?: 'inflow' | 'outflow' | 'balance' | string;
   onPress?: () => void; // Optional onPress function
+  onLongPress?: () => void; // Optional onLongPress function
 }
 
 export default function CardContainer({
   onPress,
+  onLongPress,
   children,
   type,
   ...rest
 }: ICardContainer) {
   return (
-    <View
-      style={[
-        styles.cardContainer,
-        {
-          backgroundColor:
-            type === 'outflow'
-              ? '#fd4d4d'
-              : type === 'inflow'
-              ? '#377dfd'
-              : '#018011',
-        },
-      ]}>
-      <Pressable onPress={onPress} {...rest}>
+    <Pressable onLongPress={onLongPress} onPress={onPress} {...rest}>
+      <View
+        style={[
+          styles.cardContainer,
+          {
+            backgroundColor:
+              type === 'outflow'
+                ? '#fd4d4d'
+                : type === 'inflow'
+                ? '#377dfd'
+                : '#018011',
+          },
+        ]}>
         {children}
-      </Pressable>
-    </View>
+      </View>
+    </Pressable>
   );
 }
 

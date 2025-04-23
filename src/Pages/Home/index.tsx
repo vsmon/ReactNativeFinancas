@@ -7,6 +7,7 @@ import {
   Pressable,
   ScrollView,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Realm from '../../database/realm/schemas';
@@ -28,6 +29,7 @@ export interface IValues {
   recurrent: boolean;
   dateEnd: Date;
   recurrentId: number;
+  assetType: string;
 }
 
 export interface IBitcoinData {
@@ -50,6 +52,7 @@ export default function Home({navigation}: IStackNavigationProps) {
   const [selectedYear, setSelectedYear] = useState<number>(
     new Date().getFullYear(),
   );
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
   useEffect(() => {
     loadValues();
@@ -59,6 +62,11 @@ export default function Home({navigation}: IStackNavigationProps) {
     loadValues();
   }, [selectedYear]);
 
+  useEffect(() => {
+    const reloadBitcoinPrice = async () => await updateBitcoinPrice();
+    reloadBitcoinPrice();
+  }, []);
+
   function loadValues() {
     getAllValues();
     sumOutFlow();
@@ -66,7 +74,6 @@ export default function Home({navigation}: IStackNavigationProps) {
     getValuesByYear();
     sumAllValues();
     groupByYear();
-    getBitcoin();
   }
 
   function getAllValues() {
@@ -147,7 +154,6 @@ export default function Home({navigation}: IStackNavigationProps) {
       [] as number[],
     );
     setYearList(groupByYear);
-    console.log('groupByYear', groupByYear);
   }
 
   function getValuesByMonth() {
@@ -222,181 +228,190 @@ export default function Home({navigation}: IStackNavigationProps) {
     return listByYear;
   }
 
-  async function getBitcoin() {
+  async function handleBitcoinPrice(): Promise<number> {
     try {
       const transactions: IBitcoinData[] | any =
         Realm.objects<IBitcoinData>('BitcoinData');
 
       const {address, currency}: IBitcoinData =
         transactions[transactions.length - 1];
-      console.log(transactions);
 
-      if (transactions.length > 0) {
-        console.log('passei');
-        const bitcoinPrice: number = await getBitcoinPrice(currency);
-        console.log(address);
-
-        const bitcoinAmount: number = await getBitcoinAmountBlockCypher(
-          address,
-        );
-
-        const bitcoinBalance: number = bitcoinAmount * bitcoinPrice;
-
-        console.log('bitcoinBalance', bitcoinBalance);
+      if (!transactions || address === '') {
+        throw new Error('No Bitcoin address found');
       }
+      const bitcoinPrice: number = await getBitcoinPrice(currency);
+      //const bitcoinPrice: number = new Date().getTime();
 
-      //const profit: number = bitcoinBalance - investedAmount;
+      const bitcoinAmount: number = await getBitcoinAmountBlockCypher(address);
+      //const bitcoinAmount: number = 0.00001;
 
-      /*const bitcoinAmount: number[] = await getBalances(address);
-       const bitcoinBalance: number = bitcoinAmount.reduce((prev, accum) => {
-        accum += prev;
-        return accum * bitcoinPrice;
-      }); */
+      const bitcoinBalance: number = bitcoinAmount * bitcoinPrice;
 
-      /* setBitcoinPrice(bitcoinPrice);
-      setBitcoinBalance(bitcoinBalance);
-      setBitcoinProfit(profit);
-
-      setBitcoinPriceVariation(
-        CalculateVariation(bitcoinPrice, prevBitcoinPrice.current),
-      );
-      setBitcoinBalanceVariation(
-        CalculateVariation(bitcoinBalance, prevBitcoinBalance.current),
-      );
-      setBitcoinProfitVariation(
-        CalculateVariation(profit, prevBitcoinProfit.current),
-      );
-      setIsDarkMode(darkMode); */
+      return bitcoinBalance;
     } catch (error) {
-      console.log('Error get Data', error);
+      console.log('Error get Bitcoin Data', error);
+      return 0;
     }
   }
 
+  async function updateBitcoinPrice() {
+    const transactions: IValues[] | any = Realm.objects<IBitcoinData>(
+      'Values',
+    ).filtered(`assetType = 'bitcoin'`);
+
+    const bitcoinBalance: number = await handleBitcoinPrice();
+
+    transactions.forEach((transaction: IValues) => {
+      Realm.write(() => {
+        transaction.value = Number(bitcoinBalance.toFixed(2));
+      });
+    });
+  }
+
+  async function handleReload() {
+    setIsRefreshing(true);
+    await updateBitcoinPrice();
+    loadValues();
+    setIsRefreshing(false);
+  }
+
   return (
-    <View style={{flex: 1}}>
-      <CardContainer
-        type="inflow"
-        onPress={() =>
-          navigation.navigate('Transactions', {type: 'inflow', selectedYear})
-        }>
-        <Text style={styles.textTitle}>Total Receitas</Text>
-        <Text style={styles.textValuesBalance}>R$ {inflowTotal}</Text>
-      </CardContainer>
+    <ScrollView
+      refreshControl={
+        <RefreshControl refreshing={isRefreshing} onRefresh={handleReload} />
+      }>
+      <View style={{flex: 1}}>
+        <CardContainer
+          type="inflow"
+          onPress={() =>
+            navigation.navigate('Transactions', {type: 'inflow', selectedYear})
+          }>
+          <Text style={styles.textTitle}>Total Receitas</Text>
+          <Text style={styles.textValuesBalance}>R$ {inflowTotal}</Text>
+        </CardContainer>
 
-      <CardContainer
-        type="outflow"
-        onPress={() =>
-          navigation.navigate('Transactions', {type: 'outflow', selectedYear})
-        }>
-        <Text style={styles.textTitle}>Total Despesas</Text>
-        <Text style={styles.textValuesBalance}>R$ {outflowTotal}</Text>
-      </CardContainer>
+        <CardContainer
+          type="outflow"
+          onPress={() =>
+            navigation.navigate('Transactions', {type: 'outflow', selectedYear})
+          }>
+          <Text style={styles.textTitle}>Total Despesas</Text>
+          <Text style={styles.textValuesBalance}>R$ {outflowTotal}</Text>
+        </CardContainer>
 
-      <CardContainer>
-        <Text style={styles.textTitle}>Saldo</Text>
-        <Text
-          style={[
-            styles.textValuesBalance,
-            {color: balance < 0 ? 'red' : '#0009'},
-          ]}>
-          R$ {balance}
-        </Text>
-      </CardContainer>
-      <Icon
-        style={{alignSelf: 'flex-end'}}
-        name="plus"
-        color="#000"
-        size={35}
-        onPress={() => navigation.navigate('Transactions')}
-      />
-      <View style={{flexDirection: 'row'}}>
-        {yearList?.map(year => {
-          return (
-            <Pressable
-              key={year}
-              onPress={() => {
-                setSelectedYear(year);
-              }}>
-              <View
+        <CardContainer>
+          <Text style={styles.textTitle}>Saldo</Text>
+          <Text
+            style={[
+              styles.textValuesBalance,
+              {color: balance < 0 ? 'red' : '#0009'},
+            ]}>
+            R$ {balance}
+          </Text>
+        </CardContainer>
+        <Icon
+          style={{alignSelf: 'flex-end'}}
+          name="plus"
+          color="#000"
+          size={35}
+          onPress={() => navigation.navigate('Transactions')}
+        />
+
+        <View style={{flexDirection: 'row'}}>
+          {yearList?.map(year => {
+            return (
+              <Pressable
                 key={year}
-                style={[
-                  styles.groupBy,
-                  {
-                    backgroundColor:
-                      selectedYear === year ? 'gray' : 'lightgray',
-                  },
-                ]}>
-                <Text style={styles.textTitle}>{year}</Text>
-              </View>
-            </Pressable>
-          );
-        })}
+                onPress={() => {
+                  setSelectedYear(year);
+                }}>
+                <View
+                  key={year}
+                  style={[
+                    styles.groupBy,
+                    {
+                      backgroundColor:
+                        selectedYear === year ? 'gray' : 'lightgray',
+                    },
+                  ]}>
+                  <Text style={styles.textTitle}>{year}</Text>
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+        <View style={{flexDirection: 'row'}}>
+          <Pressable
+            style={[
+              styles.groupBy,
+              {
+                backgroundColor:
+                  groupTitle === 'By Month' ? 'gray' : 'lightgray',
+              },
+            ]}
+            onPress={getValuesByMonth}>
+            <Text style={styles.textTitle}>By Month</Text>
+          </Pressable>
+          <Pressable
+            style={[
+              styles.groupBy,
+              {
+                backgroundColor:
+                  groupTitle === 'By Year' ? 'gray' : 'lightgray',
+              },
+            ]}
+            onPress={getValuesByYear}>
+            <Text style={styles.textTitle}>By Year</Text>
+          </Pressable>
+          <Pressable
+            disabled={false}
+            style={styles.groupBy}
+            onPress={getValuesByYear}>
+            <Text>Delete All</Text>
+            <Icon
+              name="delete"
+              size={30}
+              color={'red'}
+              onPress={() =>
+                Alert.alert(
+                  'Excluir todos',
+                  'Deseja excluir todos registros?',
+                  [
+                    {text: 'OK', onPress: deleteAllValues},
+                    {
+                      text: 'Cancelar',
+                      style: 'cancel',
+                      onPress: () => console.log('canceled'),
+                    },
+                  ],
+                )
+              }
+            />
+          </Pressable>
+        </View>
+        <FlatList
+          //numColumns={3}
+          horizontal={true}
+          data={groupValues}
+          renderItem={({item, index}) => (
+            <CardContainer type={item.value < 0 ? 'outflow' : 'inflow'}>
+              <Text>Data</Text>
+              <Text style={styles.textValuesGroup}>{`${
+                item.date.getMonth() + 1
+              }/${item.date.getFullYear()}`}</Text>
+              <Text>Descrição</Text>
+              <Text style={styles.textValuesGroup}>{item.description}</Text>
+              <Text>Valor</Text>
+              <Text style={styles.textValuesGroup}>
+                R$ {item.value.toFixed(2)}
+              </Text>
+              <Text style={styles.textValuesGroup}>Type {item.type}</Text>
+            </CardContainer>
+          )}
+          keyExtractor={key => String(key.id)}
+        />
       </View>
-      <View style={{flexDirection: 'row'}}>
-        <Pressable
-          style={[
-            styles.groupBy,
-            {
-              backgroundColor: groupTitle === 'By Month' ? 'gray' : 'lightgray',
-            },
-          ]}
-          onPress={getValuesByMonth}>
-          <Text style={styles.textTitle}>By Month</Text>
-        </Pressable>
-        <Pressable
-          style={[
-            styles.groupBy,
-            {
-              backgroundColor: groupTitle === 'By Year' ? 'gray' : 'lightgray',
-            },
-          ]}
-          onPress={getValuesByYear}>
-          <Text style={styles.textTitle}>By Year</Text>
-        </Pressable>
-        <Pressable
-          disabled={false}
-          style={styles.groupBy}
-          onPress={getValuesByYear}>
-          <Text>Delete All</Text>
-          <Icon
-            name="delete"
-            size={30}
-            color={'red'}
-            onPress={() =>
-              Alert.alert('Excluir todos', 'Deseja excluir todos registros?', [
-                {text: 'OK', onPress: deleteAllValues},
-                {
-                  text: 'Cancelar',
-                  style: 'cancel',
-                  onPress: () => console.log('canceled'),
-                },
-              ])
-            }
-          />
-        </Pressable>
-      </View>
-      <FlatList
-        //numColumns={3}
-        horizontal={true}
-        data={groupValues}
-        renderItem={({item, index}) => (
-          <CardContainer type={item.value < 0 ? 'outflow' : 'inflow'}>
-            <Text>Data</Text>
-            <Text style={styles.textValuesGroup}>{`${
-              item.date.getMonth() + 1
-            }/${item.date.getFullYear()}`}</Text>
-            <Text>Descrição</Text>
-            <Text style={styles.textValuesGroup}>{item.description}</Text>
-            <Text>Valor</Text>
-            <Text style={styles.textValuesGroup}>
-              R$ {item.value.toFixed(2)}
-            </Text>
-            <Text style={styles.textValuesGroup}>Type {item.type}</Text>
-          </CardContainer>
-        )}
-        keyExtractor={key => String(key.id)}
-      />
-    </View>
+    </ScrollView>
   );
 }
 

@@ -22,6 +22,7 @@ import {Picker} from '@react-native-picker/picker';
 import DatePicker from 'react-native-date-picker';
 import {UpdateMode} from 'realm';
 import {RouteProp, useRoute} from '@react-navigation/native';
+import toastMessage from '../../Utils/ToastMessage';
 
 export default function InsertTransaction({
   navigation,
@@ -33,6 +34,7 @@ export default function InsertTransaction({
   const [recurrenceEndDate, setRecurrenceEndDate] = useState<Date>(new Date());
   const [type, setType] = useState<string>('inflow');
   const [recurrence, setRecurrence] = useState<string>('false');
+  const [assetType, setAssetType] = useState<string>('false');
   const [value, setValue] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   /* const [isDelete, setIsDelete] = useState<boolean>(false); */
@@ -50,7 +52,7 @@ export default function InsertTransaction({
         Realm.create('Values', values);
       });
     console.log('NEW VALUES===============', values);
-    ToastAndroid.show('Transação Adicionada!', ToastAndroid.SHORT);
+    toastMessage('Transação Adicionada!');
   }
   function addRecurrentValue(value: IValues) {
     if (value.recurrent === true) {
@@ -84,7 +86,7 @@ export default function InsertTransaction({
       Realm.create('Values', values, UpdateMode.Modified);
     });
 
-    ToastAndroid.show('Transação Atualizada!', ToastAndroid.SHORT);
+    toastMessage('Transação Atualizada!');
   }
   function handleAddValue() {
     const values: IValues = {
@@ -95,19 +97,20 @@ export default function InsertTransaction({
       dateEnd: recurrenceEndDate,
       description: description.toUpperCase(),
       value: type === 'outflow' ? parseFloat(value) * -1 : parseFloat(value),
+      assetType: assetType,
+      recurrentId: 0,
     };
     if (!route.params) {
       addValue(values);
       addRecurrentValue(values);
     } else {
       console.log('PARAMS===========', route.params);
-      values.id = route.params?.values.id;
+      values.id = route.params.values.id;
       updateValue(values);
     }
   }
 
   function handleEditValues() {
-    //const route: RouteProp<{params: { values: IValues }}> = useRoute()
     if (route.params) {
       const {date, type, description, value, recurrent, dateEnd}: IValues =
         route.params.values;
@@ -164,6 +167,23 @@ export default function InsertTransaction({
           <Picker.Item label="Sim" value={'true'} />
           <Picker.Item label="Não" value={'false'} />
         </Picker>
+        <Text style={styles.textLabel}>Tipo do Ativo/Passivo</Text>
+        <Picker
+          style={styles.textInput}
+          selectedValue={assetType}
+          onValueChange={value => setAssetType(value)}>
+          <Picker.Item label="Salário" value={'salary'} />
+          <Picker.Item label="Aluguel" value={'rental'} />
+          <Picker.Item label="Condomínio" value={'condofee'} />
+          <Picker.Item label="Energia" value={'eletricity'} />
+          <Picker.Item label="Água" value={'water'} />
+          <Picker.Item label="Investimentos" value={'investiments'} />
+          <Picker.Item label="Cartão de Crédito" value={'creditcard'} />
+          <Picker.Item label="Internet" value={'internet'} />
+          <Picker.Item label="Bitcoin" value={'bitcoin'} />
+          <Picker.Item label="Dolar" value={'dollar'} />
+        </Picker>
+
         <Text style={styles.textLabel}>Data final recorrência</Text>
         <TextInput
           style={styles.textInput}

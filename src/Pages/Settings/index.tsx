@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {View, Text, StyleSheet, TextInput, Pressable} from 'react-native';
 import Realm from '../../database/realm/schemas';
 import {IBitcoinData, IValues} from '../Home';
@@ -32,6 +32,18 @@ export default function Settings() {
     };
     saveDB(values);
   }
+
+  function loadSettings() {
+    const data: IBitcoinData[] | any = Realm.objects('BitcoinData');
+    if (data.length > 0) {
+      setBitcoinAddress(data[data.length - 1].address);
+      setBitcoinCurrency(data[data.length - 1].currency);
+    }
+  }
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
 
   return (
     <View>

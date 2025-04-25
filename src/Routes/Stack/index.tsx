@@ -8,12 +8,14 @@ import {
 import Home, {IValues} from '../../Pages/Home';
 import InsertTransaction from '../../Pages/InsertTransactions';
 import Transactions from '../../Pages/Transactions';
+import InsertAssetType from '../../Pages/InsertAssetType';
 import {RouteProp} from '@react-navigation/native';
 
 export type StackParamList = {
   Home: undefined;
   InsertTransaction: {values: IValues; edit: boolean} | undefined;
   Transactions: {type: 'inflow' | 'outflow'; selectedYear: number} | undefined;
+  InsertAssetType: undefined;
   params: {values: IValues};
 };
 
@@ -40,6 +42,11 @@ export default function StackNavigator() {
       <Stack.Screen
         name="Transactions"
         component={Transactions}
+        options={{headerShown: true}}
+      />
+      <Stack.Screen
+        name="InsertAssetType"
+        component={InsertAssetType}
         options={{headerShown: true}}
       />
     </Stack.Navigator>

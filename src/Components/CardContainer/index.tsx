@@ -1,9 +1,18 @@
 import React from 'react';
-import {View, Text, StyleSheet, Pressable} from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  ViewStyle,
+  StyleProp,
+} from 'react-native';
 
 interface ICardContainer {
   children: React.ReactNode;
   type?: 'inflow' | 'outflow' | 'balance' | string;
+  color?: '#a0a0a0';
+  style?: StyleProp<ViewStyle>;
   onPress?: () => void; // Optional onPress function
   onLongPress?: () => void; // Optional onLongPress function
 }
@@ -13,6 +22,8 @@ export default function CardContainer({
   onLongPress,
   children,
   type,
+  color,
+  style,
   ...rest
 }: ICardContainer) {
   return (
@@ -20,13 +31,15 @@ export default function CardContainer({
       <View
         style={[
           styles.cardContainer,
+          style,
           {
-            backgroundColor:
-              type === 'outflow'
+            backgroundColor: !color
+              ? type === 'outflow'
                 ? '#fd4d4d'
                 : type === 'inflow'
                 ? '#377dfd'
-                : '#018011',
+                : '#018011'
+              : color,
           },
         ]}>
         {children}

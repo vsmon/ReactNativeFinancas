@@ -30,6 +30,7 @@ export interface IValues {
   dateEnd: Date;
   recurrentId: number;
   assetType: string;
+  assetLabel: string;
 }
 
 export interface IBitcoinData {
@@ -41,6 +42,11 @@ export interface IBitcoinData {
   currency: string;
 }
 
+export interface IAssetType {
+  id: number;
+  label: string;
+  value: string;
+}
 export default function Home({navigation}: IStackNavigationProps) {
   const [allValuesList, setAllValuesList] = useState<IValues[]>();
   const [groupValues, setGroupValues] = useState<IValues[]>();
@@ -163,12 +169,12 @@ export default function Home({navigation}: IStackNavigationProps) {
     transactions.forEach((transaction: IValues) => {
       const key: string = `${
         transaction.date.getMonth() + 1
-      }${transaction.date.getFullYear()}${transaction.description}`;
+      }${transaction.date.getFullYear()}${transaction.assetType}`;
 
       const existingItem = listByMonth.find(item => {
         const keyItem: string = `${
           item.date.getMonth() + 1
-        }${item.date.getFullYear()}${item.description}`;
+        }${item.date.getFullYear()}${item.assetType}`;
         return keyItem === key;
       });
 
@@ -199,10 +205,10 @@ export default function Home({navigation}: IStackNavigationProps) {
     const listByYear: IValues[] = [];
 
     transactions.forEach((transaction: IValues) => {
-      const key = transaction.date.getFullYear() + transaction.description;
+      const key = transaction.date.getFullYear() + transaction.assetType;
 
       const transactionIndex = listByYear.findIndex(
-        tr => tr.date.getFullYear() + tr.description === key,
+        tr => tr.date.getFullYear() + tr.assetType === key,
       );
 
       if (transactionIndex === -1) {
@@ -233,10 +239,14 @@ export default function Home({navigation}: IStackNavigationProps) {
       const transactions: IBitcoinData[] | any =
         Realm.objects<IBitcoinData>('BitcoinData');
 
+      console.log('transactions==========', transactions);
+
       const {address, currency}: IBitcoinData =
         transactions[transactions.length - 1];
 
-      if (!transactions || address === '') {
+      console.log('address==========', address);
+
+      if (!transactions) {
         throw new Error('No Bitcoin address found');
       }
       const bitcoinPrice: number = await getBitcoinPrice(currency);
@@ -399,13 +409,15 @@ export default function Home({navigation}: IStackNavigationProps) {
               <Text style={styles.textValuesGroup}>{`${
                 item.date.getMonth() + 1
               }/${item.date.getFullYear()}`}</Text>
+              <Text>Tipo</Text>
+              <Text style={styles.textValuesGroup}>{item.assetType}</Text>
               <Text>Descrição</Text>
               <Text style={styles.textValuesGroup}>{item.description}</Text>
               <Text>Valor</Text>
               <Text style={styles.textValuesGroup}>
                 R$ {item.value.toFixed(2)}
               </Text>
-              <Text style={styles.textValuesGroup}>Type {item.type}</Text>
+              {/* <Text style={styles.textValuesGroup}>Type {item.type}</Text> */}
             </CardContainer>
           )}
           keyExtractor={key => String(key.id)}

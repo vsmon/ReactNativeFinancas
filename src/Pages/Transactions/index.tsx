@@ -15,6 +15,7 @@ export default function Transactions({
   const [allValuesList, setAllValuesList] = useState<IValues[]>();
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
+
   function deleteById(id: number) {
     const values: any = Realm.objects('Values').filtered(`id = ${id}`);
     Realm.write(() => {

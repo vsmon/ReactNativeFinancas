@@ -14,15 +14,16 @@ import {
 } from 'react-native';
 
 import Realm from '../../database/realm/schemas';
-import {IValues} from '../Home';
+import {IAssetType, IValues} from '../Home';
 import {IStackNavigationProps} from '../../Routes/Stack';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import {Picker} from '@react-native-picker/picker';
 import DatePicker from 'react-native-date-picker';
-import {UpdateMode} from 'realm';
-import {RouteProp, useRoute} from '@react-navigation/native';
+import {AnyRealmObject, UpdateMode} from 'realm';
+import {RouteProp, useIsFocused, useRoute} from '@react-navigation/native';
 import toastMessage from '../../Utils/ToastMessage';
+import realm from '../../database/realm/schemas';
 
 export default function InsertTransaction({
   navigation,
@@ -34,12 +35,13 @@ export default function InsertTransaction({
   const [recurrenceEndDate, setRecurrenceEndDate] = useState<Date>(new Date());
   const [type, setType] = useState<string>('inflow');
   const [recurrence, setRecurrence] = useState<string>('false');
-  const [assetType, setAssetType] = useState<string>('false');
+  const [assetType, setAssetType] = useState<string>('');
   const [value, setValue] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   /* const [isDelete, setIsDelete] = useState<boolean>(false); */
   const [openDatePicker, setOpenDatePicker] = useState<boolean>(false);
   const [openEndDatePicker, setOpenEndDatePicker] = useState<boolean>(false);
+  const [allAssetsList, setAllAssetsList] = useState<IAssetType[]>();
 
   function addValue(values: IValues) {
     values.id = Realm.objects('Values').length + new Date().getTime();
@@ -89,6 +91,9 @@ export default function InsertTransaction({
     toastMessage('Transação Atualizada!');
   }
   function handleAddValue() {
+    const filteredAssetType: IAssetType = realm
+      .objects('AssetType')
+      .filtered(`value = ${assetType}`);
     const values: IValues = {
       id: Realm.objects('Values').length + new Date().getTime(),
       date: date,
@@ -98,6 +103,7 @@ export default function InsertTransaction({
       description: description.toUpperCase(),
       value: type === 'outflow' ? parseFloat(value) * -1 : parseFloat(value),
       assetType: assetType,
+      assetLabel: filteredAssetType.label,
       recurrentId: 0,
     };
     if (!route.params) {
@@ -123,9 +129,19 @@ export default function InsertTransaction({
     }
   }
 
+  function loadAssets() {
+    const assets: IAssetType[] | any = realm.objects('AssetType');
+    setAllAssetsList([...assets]);
+  }
+
   useEffect(() => {
+    loadAssets();
     handleEditValues();
   }, []);
+
+  useEffect(() => {
+    loadAssets();
+  }, [useIsFocused()]);
 
   return (
     <ScrollView style={{flex: 1}}>
@@ -167,23 +183,6 @@ export default function InsertTransaction({
           <Picker.Item label="Sim" value={'true'} />
           <Picker.Item label="Não" value={'false'} />
         </Picker>
-        <Text style={styles.textLabel}>Tipo do Ativo/Passivo</Text>
-        <Picker
-          style={styles.textInput}
-          selectedValue={assetType}
-          onValueChange={value => setAssetType(value)}>
-          <Picker.Item label="Salário" value={'salary'} />
-          <Picker.Item label="Aluguel" value={'rental'} />
-          <Picker.Item label="Condomínio" value={'condofee'} />
-          <Picker.Item label="Energia" value={'eletricity'} />
-          <Picker.Item label="Água" value={'water'} />
-          <Picker.Item label="Investimentos" value={'investiments'} />
-          <Picker.Item label="Cartão de Crédito" value={'creditcard'} />
-          <Picker.Item label="Internet" value={'internet'} />
-          <Picker.Item label="Bitcoin" value={'bitcoin'} />
-          <Picker.Item label="Dolar" value={'dollar'} />
-        </Picker>
-
         <Text style={styles.textLabel}>Data final recorrência</Text>
         <TextInput
           style={styles.textInput}
@@ -205,17 +204,53 @@ export default function InsertTransaction({
             setOpenEndDatePicker(false);
           }}
         />
+        <Text style={styles.textLabel}>Tipo do Ativo/Passivo</Text>
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: 'lightgray',
+            marginBottom: 10,
+            marginRight: 10,
+            marginLeft: 10,
+          }}>
+          <Picker
+            style={[styles.textInput, {marginBottom: 0}]}
+            selectedValue={assetType}
+            onValueChange={value => setAssetType(value)}>
+            {allAssetsList?.map((asset, index) => {
+              return (
+                <Picker.Item
+                  key={asset.value}
+                  value={asset.value}
+                  label={asset.label}
+                />
+              );
+            })}
+          </Picker>
+          <Icon
+            style={{}}
+            name="plus"
+            size={43}
+            color={'#000'}
+            onPress={() => navigation.navigate('InsertAssetType')}
+          />
+        </View>
+
         <Text style={styles.textLabel}>Descrição</Text>
         <TextInput
           style={styles.textInput}
-          placeholder="Descrição"
+          placeholder="Descrição..."
+          placeholderTextColor={'#8d8d8d'}
           value={description}
           onChangeText={value => setDescription(value)}
         />
         <Text style={styles.textLabel}>Valor</Text>
         <TextInput
           style={styles.textInput}
-          placeholder="Valor"
+          placeholder="Valor..."
+          placeholderTextColor={'#8d8d8d'}
           value={value}
           keyboardType="numeric"
           onChangeText={value => setValue(value)}
@@ -274,9 +309,9 @@ const styles = StyleSheet.create({
     margin: 10,
   },
   textInput: {
-    //borderRadius: 10,
+    flex: 1,
     backgroundColor: 'lightgray',
-    //margin: 10,
+    borderRadius: 5,
     marginBottom: 10,
     marginRight: 10,
     marginLeft: 10,
@@ -285,6 +320,5 @@ const styles = StyleSheet.create({
   textLabel: {
     marginLeft: 10,
     color: '#000',
-    //marginBottom: 0,
   },
 });

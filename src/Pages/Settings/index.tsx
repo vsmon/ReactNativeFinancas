@@ -54,6 +54,7 @@ export default function Settings() {
       <TextInput
         style={styles.input}
         placeholder="Bitcoin addresses..."
+        placeholderTextColor={'#8d8d8d'}
         value={bitcoinAddress}
         onChangeText={text => setBitcoinAddress(text)}
         autoCapitalize="none"
@@ -62,6 +63,7 @@ export default function Settings() {
       <TextInput
         style={styles.input}
         placeholder="Currency..."
+        placeholderTextColor={'#8d8d8d'}
         value={bitcoinCurrency}
         onChangeText={text => setBitcoinCurrency(text)}
         autoCapitalize="none"
@@ -86,11 +88,12 @@ const styles = StyleSheet.create({
   input: {
     height: 40,
     borderColor: 'gray',
-    borderWidth: 1,
+    borderRadius: 5,
     marginBottom: 10,
     paddingLeft: 8,
     margin: 10,
-    borderRadius: 5,
+    color: '#000',
+    backgroundColor: 'lightgray',
   },
   textLabel: {
     marginLeft: 10,

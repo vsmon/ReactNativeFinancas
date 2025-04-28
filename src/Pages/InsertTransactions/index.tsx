@@ -160,11 +160,13 @@ export default function InsertTransaction({
       recurrentId: recurrence ? id : 0,
     };
 
-    if (route.params && 'edit' in route.params && !route.params.edit) {
+    if (!route.params?.edit || route.params.edit === false) {
+      console.log('passei');
       addValue(values);
       recurrence ? addRecurrentValue(values) : null;
       toastMessage('Transação Adicionada!');
     } else {
+      console.log('passei2');
       handleUpdate(values);
     }
   }

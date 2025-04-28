@@ -80,10 +80,7 @@ export default function Transactions({
             color: '#000',
             alignSelf: 'center',
           }}>
-          {(route.params && 'type' in route.params && route.params?.type) ===
-          'inflow'
-            ? 'Receitas'
-            : 'Despesas'}
+          {route.params?.type === 'inflow' ? 'Receitas' : 'Despesas'}
         </Text>
         <View style={{marginTop: 5, flex: 1}}>
           <FlatList

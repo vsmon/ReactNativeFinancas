@@ -140,7 +140,8 @@ export default function InsertAssetType() {
                 {deleting ? (
                   <Icon
                     name="delete"
-                    size={18}
+                    size={28}
+                    color={'red'}
                     onPress={() => deleteAssetById(item.id)}
                   />
                 ) : undefined}

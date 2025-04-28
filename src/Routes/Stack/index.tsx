@@ -14,9 +14,14 @@ import {RouteProp} from '@react-navigation/native';
 export type StackParamList = {
   Home: undefined;
   InsertTransaction: {values: IValues; edit: boolean} | undefined;
-  Transactions: {type: 'inflow' | 'outflow'; selectedYear: number} | undefined;
+  Transactions:
+    | {
+        type: 'inflow' | 'outflow';
+        selectedYear: number;
+      }
+    | undefined;
   InsertAssetType: undefined;
-  params: {values: IValues};
+  //params: {values: IValues};
 };
 
 export interface IStackNavigationProps {

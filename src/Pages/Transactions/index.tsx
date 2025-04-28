@@ -44,9 +44,25 @@ export default function Transactions({
     }
   }
 
+  function deleteRecurringTransaction(recurringId: number) {
+    try {
+      const transactions = Realm.objects('Values').filtered(
+        `recurrentId = ${recurringId}`,
+      );
+      Realm.write(() => {
+        Realm.delete(transactions);
+      });
+      getAllValues();
+      setRefreshing(!refreshing);
+    } catch (error) {
+      console.log('Error deleting recurring transaction: ', error);
+    }
+  }
+
   useEffect(() => {
     getAllValues();
     getValuesByTypeTransaction();
+    setIsUpdating(false);
   }, [useIsFocused(), refreshing]);
   return (
     <View style={{flex: 1}}>
@@ -58,6 +74,17 @@ export default function Transactions({
         onPress={() => navigation.navigate('InsertTransaction')}
       />
       <View style={{flex: 1}}>
+        <Text
+          style={{
+            fontSize: 28,
+            color: '#000',
+            alignSelf: 'center',
+          }}>
+          {(route.params && 'type' in route.params && route.params?.type) ===
+          'inflow'
+            ? 'Receitas'
+            : 'Despesas'}
+        </Text>
         <View style={{marginTop: 5, flex: 1}}>
           <FlatList
             data={allValuesList?.sort((a, b) => b.id - a.id)}
@@ -66,13 +93,16 @@ export default function Transactions({
                 type={item.value < 0 ? 'outflow' : 'inflow'}
                 onPress={() => Alert.alert(String(item.id))}
                 onLongPress={() => setIsUpdating(!isUpdating)}>
-                <Text>{item.id}</Text>
+                <Text>ID:{item.id}</Text>
+                <Text>RecurrentID:{item.recurrentId}</Text>
                 <Text style={styles.textTitle}>Data</Text>
                 <Text style={styles.textValues}>
                   {item.date.toLocaleDateString()}
                 </Text>
                 <Text style={styles.textTitle}>Descrição</Text>
                 <Text style={styles.textValues}>{item.description}</Text>
+                <Text style={styles.textTitle}>Tipo</Text>
+                <Text style={styles.textValues}>{item.assetType}</Text>
                 <Text style={styles.textTitle}>Valor</Text>
                 <Text style={styles.textValues}>R$ {item.value}</Text>
 
@@ -82,7 +112,27 @@ export default function Transactions({
                       name="delete"
                       size={35}
                       color={'red'}
-                      onPress={() => deleteById(item.id)}
+                      onPress={() => {
+                        Alert.alert(
+                          'Delete transaction',
+                          'Would you like deleting recurring transactions?',
+                          [
+                            {
+                              text: 'YES',
+                              onPress: () => {
+                                deleteRecurringTransaction(item.recurrentId);
+                              },
+                            },
+                            {
+                              text: 'NO',
+                              onPress: () => deleteById(item.id),
+                            },
+                            {
+                              text: 'Cancel',
+                            },
+                          ],
+                        );
+                      }}
                     />
                     <Icon
                       name="application-edit"
@@ -90,7 +140,10 @@ export default function Transactions({
                       color={'red'}
                       onPress={() =>
                         navigation.navigate('InsertTransaction', {
-                          values: item,
+                          values: {
+                            ...item,
+                            serializedDate: item.date.toISOString(),
+                          },
                           edit: true,
                         })
                       }

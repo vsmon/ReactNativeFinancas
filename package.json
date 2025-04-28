@@ -7,7 +7,8 @@
     "ios": "react-native run-ios",
     "lint": "eslint .",
     "start": "react-native start",
-    "test": "jest"
+    "test": "jest",
+    "buildApk": "cd android && ./gradlew clean && ./gradlew assembleRelease && cd D:/Users/Rodrigo/Desktop/financas/android/app/build/outputs/apk/release && ren app-release.apk financas.apk && powershell Copy-Item -Path 'D:\\Users\\Rodrigo\\Desktop\\financas\\android\\app\\build\\outputs\\apk\\release\\financas.apk'  -Destination '\\\\192.168.0.95\\private'"
   },
   "dependencies": {
     "@react-native-picker/picker": "^2.8.1",

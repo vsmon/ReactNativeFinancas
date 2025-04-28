@@ -23,6 +23,7 @@ export interface IValues {
   key?: string;
   id: number;
   date: Date;
+  serializedDate?: string;
   type: string;
   description: string;
   value: number;
@@ -30,7 +31,7 @@ export interface IValues {
   dateEnd: Date;
   recurrentId: number;
   assetType: string;
-  assetLabel: string;
+  assetLabel?: string;
 }
 
 export interface IBitcoinData {
@@ -98,7 +99,7 @@ export default function Home({navigation}: IStackNavigationProps) {
       new Date(`${selectedYear}-01-01T00:00:00.000Z`),
       new Date(`${selectedYear + 1}-01-01T00:00:00.000Z`),
     );
-
+    //console.log(transactions);
     return transactions;
   }
 

@@ -23,7 +23,6 @@ import DatePicker from 'react-native-date-picker';
 import {AnyRealmObject, UpdateMode} from 'realm';
 import {RouteProp, useIsFocused, useRoute} from '@react-navigation/native';
 import toastMessage from '../../Utils/ToastMessage';
-import realm from '../../database/realm/schemas';
 
 export default function InsertTransaction({
   navigation,
@@ -31,6 +30,8 @@ export default function InsertTransaction({
 }: IStackNavigationProps) {
   /* const [allValuesList, setAllValuesList] = useState<IValues[]>(); */
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [id, setId] = useState<number>(0);
+  const [recurrentId, setRecurrentId] = useState<number>(0);
   const [date, setDate] = useState<Date>(new Date());
   const [recurrenceEndDate, setRecurrenceEndDate] = useState<Date>(new Date());
   const [type, setType] = useState<string>('inflow');
@@ -42,20 +43,16 @@ export default function InsertTransaction({
   const [openDatePicker, setOpenDatePicker] = useState<boolean>(false);
   const [openEndDatePicker, setOpenEndDatePicker] = useState<boolean>(false);
   const [allAssetsList, setAllAssetsList] = useState<IAssetType[]>();
+  const [transactionToEdit, setTransactionToEdit] = useState<IValues>();
 
   function addValue(values: IValues) {
-    values.id = Realm.objects('Values').length + new Date().getTime();
-    values.recurrentId = values.recurrent
-      ? Realm.objects('Values').length + new Date().getTime()
-      : 0;
-    (values.value =
-      type === 'outflow' ? parseFloat(value) * -1 : parseFloat(value)),
-      Realm.write(() => {
-        Realm.create('Values', values);
-      });
+    Realm.write(() => {
+      Realm.create('Values', values);
+    });
+
     console.log('NEW VALUES===============', values);
-    toastMessage('Transação Adicionada!');
   }
+
   function addRecurrentValue(value: IValues) {
     if (value.recurrent === true) {
       const numOfYears: number =
@@ -73,8 +70,10 @@ export default function InsertTransaction({
         newDate.setMonth(oldDate.getMonth() + 1);
 
         value.date = new Date(newDate);
-        value.recurrentId =
-          Realm.objects('Values').length + new Date().getTime();
+
+        value.id = Realm.objects('Values').length + new Date().getTime();
+        //value.recurrentId = value.id;
+
         addValue(value);
 
         setRefreshing(!refreshing);
@@ -82,20 +81,74 @@ export default function InsertTransaction({
       }
     }
   }
+
+  function updateRecurrentTransaction() {
+    const values: IValues = {
+      id: id,
+      date: date,
+      type: type,
+      recurrent: recurrence === 'true' ? true : false,
+      dateEnd: recurrenceEndDate,
+      description: description.toUpperCase(),
+      value: parseFloat(value),
+      assetType: assetType,
+      assetLabel: '',
+      recurrentId: recurrentId,
+    };
+    const transactions: IValues[] | any = Realm.objects<IValues>(
+      'Values',
+    ).filtered(`recurrentId = ${values.recurrentId}`);
+
+    transactions.map((transaction: IValues) => {
+      values.id = transaction.id;
+      values.recurrentId = transaction.recurrentId;
+      values.date = transaction.date;
+      values.dateEnd = transaction.dateEnd;
+      Realm.write(() => {
+        Realm.create('Values', values, UpdateMode.Modified);
+      });
+    });
+  }
+
   function updateValue(values: IValues) {
-    console.log('VALUE======', values);
     Realm.write(() => {
       Realm.create('Values', values, UpdateMode.Modified);
     });
 
     toastMessage('Transação Atualizada!');
   }
-  function handleAddValue() {
-    const filteredAssetType: IAssetType = realm
-      .objects('AssetType')
-      .filtered(`value = ${assetType}`);
+
+  function handleUpdate(values: IValues) {
+    values.id = id;
+    values.recurrentId = recurrentId;
+    Alert.alert(
+      'Update transaction',
+      'Would you like updating recurring transactions?',
+      [
+        {
+          text: 'YES',
+          onPress: () => {
+            updateRecurrentTransaction();
+            toastMessage('Todas Transações Recorrentes Atualizada!');
+          },
+        },
+        {
+          text: 'ONLY THIS',
+          onPress: () => {
+            updateValue(values);
+            toastMessage('Transação Atualizada!');
+          },
+        },
+        {
+          text: 'Cancel',
+        },
+      ],
+    );
+  }
+  function handleSave() {
+    const id = Realm.objects('Values').length + new Date().getTime();
     const values: IValues = {
-      id: Realm.objects('Values').length + new Date().getTime(),
+      id: id,
       date: date,
       type: type,
       recurrent: recurrence === 'true' ? true : false,
@@ -103,40 +156,57 @@ export default function InsertTransaction({
       description: description.toUpperCase(),
       value: type === 'outflow' ? parseFloat(value) * -1 : parseFloat(value),
       assetType: assetType,
-      assetLabel: filteredAssetType.label,
-      recurrentId: 0,
+      assetLabel: '',
+      recurrentId: recurrence ? id : 0,
     };
-    if (!route.params) {
+
+    if (route.params && 'edit' in route.params && !route.params.edit) {
       addValue(values);
-      addRecurrentValue(values);
+      recurrence ? addRecurrentValue(values) : null;
+      toastMessage('Transação Adicionada!');
     } else {
-      console.log('PARAMS===========', route.params);
-      values.id = route.params.values.id;
-      updateValue(values);
+      handleUpdate(values);
     }
   }
 
-  function handleEditValues() {
-    if (route.params) {
-      const {date, type, description, value, recurrent, dateEnd}: IValues =
-        route.params.values;
-      setDate(date);
+  function handleLoadEditing() {
+    if (!(route.params && 'values' in route.params)) {
+      return;
+    }
+    if (route.params.edit === true) {
+      console.log('PARAMS==========', route.params);
+      const {
+        id,
+        recurrentId,
+        serializedDate,
+        type,
+        recurrent,
+        dateEnd,
+        assetType,
+        description,
+        value,
+      }: IValues = route.params.values;
+      setId(id);
+      setRecurrentId(recurrentId);
+      setDate(new Date(serializedDate!));
       setType(type);
-      setDescription(description);
-      setValue(value.toString());
       setRecurrence(recurrent.toString());
       setRecurrenceEndDate(dateEnd);
+      setAssetType(assetType);
+      setDescription(description);
+      setValue(value.toString());
     }
   }
 
   function loadAssets() {
-    const assets: IAssetType[] | any = realm.objects('AssetType');
+    const assets: IAssetType[] | any = Realm.objects('AssetType');
     setAllAssetsList([...assets]);
+    setAssetType(assets[0].value);
   }
 
   useEffect(() => {
     loadAssets();
-    handleEditValues();
+    handleLoadEditing();
   }, []);
 
   useEffect(() => {
@@ -269,7 +339,7 @@ export default function InsertTransaction({
             name="content-save"
             size={40}
             color={'#000'}
-            onPress={() => handleAddValue()}
+            onPress={() => handleSave()}
           />
         </Pressable>
       </View>

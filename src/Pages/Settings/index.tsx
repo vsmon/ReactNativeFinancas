@@ -3,6 +3,7 @@ import {View, Text, StyleSheet, TextInput, Pressable} from 'react-native';
 import Realm from '../../database/realm/schemas';
 import {IBitcoinData, IValues} from '../Home';
 import toastMessage from '../../Utils/ToastMessage';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 export default function Settings() {
   const [bitcoinAddress, setBitcoinAddress] = useState<string>('');
@@ -68,9 +69,7 @@ export default function Settings() {
         onChangeText={text => setBitcoinCurrency(text)}
         autoCapitalize="none"
       />
-      <Pressable onPress={() => handleSave()}>
-        <Text>Save</Text>
-      </Pressable>
+      <Icon name="content-save" size={38} onPress={handleSave} />
     </View>
   );
 }

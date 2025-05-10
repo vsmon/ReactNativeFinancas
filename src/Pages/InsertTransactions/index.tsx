@@ -37,6 +37,7 @@ export default function InsertTransaction({
   const [type, setType] = useState<string>('inflow');
   const [recurrence, setRecurrence] = useState<string>('false');
   const [assetType, setAssetType] = useState<string>('');
+  const [defaultAssetType, setDefaultAssetType] = useState<string>('');
   const [value, setValue] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   /* const [isDelete, setIsDelete] = useState<boolean>(false); */
@@ -160,15 +161,16 @@ export default function InsertTransaction({
       recurrentId: recurrence ? id : 0,
     };
 
-    if (!route.params?.edit || route.params.edit === false) {
-      console.log('passei');
+    //if (route.params && 'edit' in route.params) {
+
+    if (!route.params?.edit || route.params?.edit === false) {
       addValue(values);
       recurrence ? addRecurrentValue(values) : null;
       toastMessage('Transação Adicionada!');
     } else {
-      console.log('passei2');
       handleUpdate(values);
     }
+    //}
   }
 
   function handleLoadEditing() {
@@ -176,7 +178,6 @@ export default function InsertTransaction({
       return;
     }
     if (route.params.edit === true) {
-      console.log('PARAMS==========', route.params);
       const {
         id,
         recurrentId,
@@ -194,7 +195,8 @@ export default function InsertTransaction({
       setType(type);
       setRecurrence(recurrent.toString());
       setRecurrenceEndDate(dateEnd);
-      setAssetType(assetType);
+      setDefaultAssetType(assetType);
+      setAssetType(defaultAssetType);
       setDescription(description);
       setValue(value.toString());
     }
@@ -203,6 +205,7 @@ export default function InsertTransaction({
   function loadAssets() {
     const assets: IAssetType[] | any = Realm.objects('AssetType');
     setAllAssetsList([...assets]);
+
     setAssetType(assets[0].value);
   }
 
@@ -289,7 +292,7 @@ export default function InsertTransaction({
           }}>
           <Picker
             style={[styles.textInput, {marginBottom: 0}]}
-            selectedValue={assetType}
+            selectedValue={defaultAssetType}
             onValueChange={value => setAssetType(value)}>
             {allAssetsList?.map((asset, index) => {
               return (

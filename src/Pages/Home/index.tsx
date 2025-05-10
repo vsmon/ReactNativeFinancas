@@ -8,6 +8,7 @@ import {
   ScrollView,
   Alert,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Realm from '../../database/realm/schemas';
@@ -18,6 +19,10 @@ import {useIsFocused} from '@react-navigation/native';
 import CardContainer from '../../Components/CardContainer';
 
 import {getBitcoinAmountBlockCypher, getBitcoinPrice} from '../../Services';
+import {Bar, CartesianChart, Line} from 'victory-native';
+import {useFont} from '@shopify/react-native-skia';
+import TransactionsChart from '../../Components/TransactionsChart';
+import FlowChart from '../../Components/FlowChart';
 
 export interface IValues {
   key?: string;
@@ -49,8 +54,8 @@ export interface IAssetType {
   value: string;
 }
 export default function Home({navigation}: IStackNavigationProps) {
-  const [allValuesList, setAllValuesList] = useState<IValues[]>();
-  const [groupValues, setGroupValues] = useState<IValues[]>();
+  const [allValuesList, setAllValuesList] = useState<IValues[]>([]);
+  const [groupValues, setGroupValues] = useState<IValues[]>([]);
   const [yearList, setYearList] = useState<number[]>();
   const [balance, setBalance] = useState<number>(0);
   const [outflowTotal, setOutflowTotal] = useState<number>(0);
@@ -86,7 +91,7 @@ export default function Home({navigation}: IStackNavigationProps) {
   function getAllValues() {
     const values: any = Realm.objects('Values');
     setAllValuesList([...values]);
-    //console.log('values', values);
+    //console.log('values===========', values);
   }
 
   function getValuesByYearDB(): IValues[] {
@@ -235,26 +240,22 @@ export default function Home({navigation}: IStackNavigationProps) {
     return listByYear;
   }
 
-  async function handleBitcoinPrice(): Promise<number> {
+  async function handleBitcoinBalance(): Promise<number> {
     try {
-      const transactions: IBitcoinData[] | any =
+      const bitcoinData: IBitcoinData[] | any =
         Realm.objects<IBitcoinData>('BitcoinData');
 
-      console.log('transactions==========', transactions);
-
-      const {address, currency}: IBitcoinData =
-        transactions[transactions.length - 1];
-
-      console.log('address==========', address);
-
-      if (!transactions) {
+      if (bitcoinData.lenght === 0) {
         throw new Error('No Bitcoin address found');
       }
-      const bitcoinPrice: number = await getBitcoinPrice(currency);
-      //const bitcoinPrice: number = new Date().getTime();
+      const {address, currency}: IBitcoinData =
+        bitcoinData[bitcoinData.length - 1];
 
       const bitcoinAmount: number = await getBitcoinAmountBlockCypher(address);
       //const bitcoinAmount: number = 0.00001;
+
+      const bitcoinPrice: number = await getBitcoinPrice(currency);
+      //const bitcoinPrice: number = new Date().getTime();
 
       const bitcoinBalance: number = bitcoinAmount * bitcoinPrice;
 
@@ -266,17 +267,25 @@ export default function Home({navigation}: IStackNavigationProps) {
   }
 
   async function updateBitcoinPrice() {
-    const transactions: IValues[] | any = Realm.objects<IBitcoinData>(
-      'Values',
-    ).filtered(`assetType = 'bitcoin'`);
+    try {
+      const transactions: IValues[] | any = Realm.objects<IBitcoinData>(
+        'Values',
+      ).filtered(`assetType = 'bitcoin'`);
 
-    const bitcoinBalance: number = await handleBitcoinPrice();
+      const bitcoinBalance: number = await handleBitcoinBalance();
 
-    transactions.forEach((transaction: IValues) => {
-      Realm.write(() => {
-        transaction.value = Number(bitcoinBalance.toFixed(2));
-      });
-    });
+      console.log('passei bitcoinBalance=========', bitcoinBalance);
+
+      if (bitcoinBalance !== 0) {
+        transactions.forEach((transaction: IValues) => {
+          Realm.write(() => {
+            transaction.value = Number(bitcoinBalance.toFixed(2));
+          });
+        });
+      }
+    } catch (error) {
+      console.log('Error update Bitcoin Price', error);
+    }
   }
 
   async function handleReload() {
@@ -327,6 +336,8 @@ export default function Home({navigation}: IStackNavigationProps) {
           size={35}
           onPress={() => navigation.navigate('Transactions')}
         />
+
+        <Text style={{color: '#000'}}>{groupValues?.length}</Text>
 
         <View style={{flexDirection: 'row'}}>
           {yearList?.map(year => {
@@ -405,13 +416,16 @@ export default function Home({navigation}: IStackNavigationProps) {
           horizontal={true}
           data={groupValues}
           renderItem={({item, index}) => (
-            <CardContainer type={item.value < 0 ? 'outflow' : 'inflow'}>
+            <CardContainer
+              style={{paddingTop: 5, paddingBottom: 5}}
+              key={item.id}
+              type={item.value < 0 ? 'outflow' : 'inflow'}>
               <Text>Data</Text>
               <Text style={styles.textValuesGroup}>{`${
                 item.date.getMonth() + 1
               }/${item.date.getFullYear()}`}</Text>
-              <Text>Tipo</Text>
-              <Text style={styles.textValuesGroup}>{item.assetType}</Text>
+              {/* <Text>Tipo</Text>
+              <Text style={styles.textValuesGroup}>{item.assetType}</Text> */}
               <Text>Descrição</Text>
               <Text style={styles.textValuesGroup}>{item.description}</Text>
               <Text>Valor</Text>
@@ -424,6 +438,8 @@ export default function Home({navigation}: IStackNavigationProps) {
           keyExtractor={key => String(key.id)}
         />
       </View>
+      <TransactionsChart data={groupValues} />
+      <FlowChart listData={allValuesList} />
     </ScrollView>
   );
 }

@@ -23,6 +23,8 @@ import {Bar, CartesianChart, Line} from 'victory-native';
 import {useFont} from '@shopify/react-native-skia';
 import TransactionsChart from '../../Components/TransactionsChart';
 import FlowChart from '../../Components/FlowChart';
+import InflowChart from '../../Components/InflowChart';
+import OutflowChart from '../../Components/OutflowChart';
 
 export interface IValues {
   key?: string;
@@ -37,6 +39,7 @@ export interface IValues {
   recurrentId: number;
   assetType: string;
   assetLabel?: string;
+  percentage?: number;
 }
 
 export interface IBitcoinData {
@@ -300,7 +303,7 @@ export default function Home({navigation}: IStackNavigationProps) {
       refreshControl={
         <RefreshControl refreshing={isRefreshing} onRefresh={handleReload} />
       }>
-      <View style={{flex: 1}}>
+      <View style={{flex: 1, backgroundColor: 'white'}}>
         <CardContainer
           type="inflow"
           onPress={() =>
@@ -336,8 +339,6 @@ export default function Home({navigation}: IStackNavigationProps) {
           size={35}
           onPress={() => navigation.navigate('Transactions')}
         />
-
-        <Text style={{color: '#000'}}>{groupValues?.length}</Text>
 
         <View style={{flexDirection: 'row'}}>
           {yearList?.map(year => {
@@ -417,7 +418,7 @@ export default function Home({navigation}: IStackNavigationProps) {
           data={groupValues}
           renderItem={({item, index}) => (
             <CardContainer
-              style={{paddingTop: 5, paddingBottom: 5}}
+              style={{paddingTop: 5, paddingBottom: 5, marginBottom: 15}}
               key={item.id}
               type={item.value < 0 ? 'outflow' : 'inflow'}>
               <Text>Data</Text>
@@ -437,9 +438,14 @@ export default function Home({navigation}: IStackNavigationProps) {
           )}
           keyExtractor={key => String(key.id)}
         />
+        <Text style={styles.textTitle}>Despesas</Text>
+        <OutflowChart data={groupValues} />
+        <Text style={styles.textTitle}>Receitas</Text>
+        <InflowChart data={groupValues} />
+        <Text style={styles.textTitle}>Receitas/Despesas</Text>
+        <TransactionsChart data={groupValues} />
+        <FlowChart listData={allValuesList} />
       </View>
-      <TransactionsChart data={groupValues} />
-      <FlowChart listData={allValuesList} />
     </ScrollView>
   );
 }

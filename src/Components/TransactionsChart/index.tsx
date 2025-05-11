@@ -2,6 +2,7 @@ import {useFont} from '@shopify/react-native-skia';
 import {View} from 'react-native';
 import {Bar, CartesianChart} from 'victory-native';
 import {IValues} from '../../Pages/Home';
+import DefaultChart from '../DefaultChart';
 const inter = require('../../../assets/fonts/roboto.ttf');
 
 interface IChartProps {
@@ -55,6 +56,7 @@ export default function TransactionsChart({data}: IChartProps) {
   }
   const result = groupByAssetType(data);
   //console.log('TransactionChart===========', result);
+  return <DefaultChart data={result} xKey={'assetType'} yKeys={'percentage'} />;
   return (
     <View
       style={{

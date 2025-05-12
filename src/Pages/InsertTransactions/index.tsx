@@ -36,7 +36,7 @@ export default function InsertTransaction({
   const [recurrenceEndDate, setRecurrenceEndDate] = useState<Date>(new Date());
   const [type, setType] = useState<string>('inflow');
   const [recurrence, setRecurrence] = useState<string>('false');
-  const [assetType, setAssetType] = useState<string>('');
+  const [assetType, setAssetType] = useState<string>('n/a');
   const [defaultAssetType, setDefaultAssetType] = useState<string>('');
   const [value, setValue] = useState<string>('');
   const [description, setDescription] = useState<string>('');
@@ -45,6 +45,11 @@ export default function InsertTransaction({
   const [openEndDatePicker, setOpenEndDatePicker] = useState<boolean>(false);
   const [allAssetsList, setAllAssetsList] = useState<IAssetType[]>();
   const [transactionToEdit, setTransactionToEdit] = useState<IValues>();
+
+  const valuesParams: IValues | undefined =
+    route.params && 'values' in route.params ? route.params.values : undefined;
+  const editParams: boolean | undefined =
+    route.params && 'edit' in route.params ? route.params.edit : undefined;
 
   function addValue(values: IValues) {
     Realm.write(() => {
@@ -122,29 +127,34 @@ export default function InsertTransaction({
   function handleUpdate(values: IValues) {
     values.id = id;
     values.recurrentId = recurrentId;
-    Alert.alert(
-      'Update transaction',
-      'Would you like updating recurring transactions?',
-      [
-        {
-          text: 'YES',
-          onPress: () => {
-            updateRecurrentTransaction();
-            toastMessage('Todas Transações Recorrentes Atualizada!');
+    if (values.recurrent === true) {
+      Alert.alert(
+        'Update transaction',
+        'Would you like updating recurring transactions?',
+        [
+          {
+            text: 'YES',
+            onPress: () => {
+              updateRecurrentTransaction();
+              toastMessage('Todas Transações Recorrentes Atualizada!');
+            },
           },
-        },
-        {
-          text: 'ONLY THIS',
-          onPress: () => {
-            updateValue(values);
-            toastMessage('Transação Atualizada!');
+          {
+            text: 'ONLY THIS',
+            onPress: () => {
+              updateValue(values);
+              toastMessage('Transação Atualizada!');
+            },
           },
-        },
-        {
-          text: 'Cancel',
-        },
-      ],
-    );
+          {
+            text: 'Cancel',
+          },
+        ],
+      );
+    } else {
+      updateValue(values);
+      toastMessage('Transação Atualizada!');
+    }
   }
   function handleSave() {
     const id = Realm.objects('Values').length + new Date().getTime();
@@ -161,23 +171,17 @@ export default function InsertTransaction({
       recurrentId: recurrence ? id : 0,
     };
 
-    //if (route.params && 'edit' in route.params) {
-
-    if (!route.params?.edit || route.params?.edit === false) {
+    if (editParams === false || editParams === undefined) {
       addValue(values);
       recurrence ? addRecurrentValue(values) : null;
       toastMessage('Transação Adicionada!');
     } else {
       handleUpdate(values);
     }
-    //}
   }
 
   function handleLoadEditing() {
-    if (!(route.params && 'values' in route.params)) {
-      return;
-    }
-    if (route.params.edit === true) {
+    if (editParams === true && valuesParams) {
       const {
         id,
         recurrentId,
@@ -188,7 +192,7 @@ export default function InsertTransaction({
         assetType,
         description,
         value,
-      }: IValues = route.params.values;
+      }: IValues = valuesParams;
       setId(id);
       setRecurrentId(recurrentId);
       setDate(new Date(serializedDate!));
@@ -196,27 +200,25 @@ export default function InsertTransaction({
       setRecurrence(recurrent.toString());
       setRecurrenceEndDate(dateEnd);
       setDefaultAssetType(assetType);
-      setAssetType(defaultAssetType);
+      setAssetType(assetType);
       setDescription(description);
       setValue(value.toString());
+      //console.log('assetTypeEditing=========', assetType);
     }
   }
 
   function loadAssets() {
     const assets: IAssetType[] | any = Realm.objects('AssetType');
-    setAllAssetsList([...assets]);
 
-    setAssetType(assets[0].value);
+    //setAssetType(assets[0].value);
+
+    setAllAssetsList([...assets]);
   }
 
   useEffect(() => {
-    loadAssets();
     handleLoadEditing();
-  }, []);
-
-  useEffect(() => {
     loadAssets();
-  }, [useIsFocused()]);
+  }, []);
 
   return (
     <ScrollView style={{flex: 1}}>
@@ -292,12 +294,12 @@ export default function InsertTransaction({
           }}>
           <Picker
             style={[styles.textInput, {marginBottom: 0}]}
-            selectedValue={defaultAssetType}
+            selectedValue={assetType}
             onValueChange={value => setAssetType(value)}>
             {allAssetsList?.map((asset, index) => {
               return (
                 <Picker.Item
-                  key={asset.value}
+                  key={index}
                   value={asset.value}
                   label={asset.label}
                 />

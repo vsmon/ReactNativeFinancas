@@ -112,7 +112,7 @@ export default function Transactions({
                     <Icon
                       name="delete"
                       size={35}
-                      color={'red'}
+                      color={'black'}
                       onPress={() => {
                         Alert.alert(
                           'Delete transaction',
@@ -138,7 +138,7 @@ export default function Transactions({
                     <Icon
                       name="application-edit"
                       size={35}
-                      color={'red'}
+                      color={'black'}
                       onPress={() =>
                         navigation.navigate('InsertTransaction', {
                           values: {

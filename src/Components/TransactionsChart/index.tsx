@@ -22,7 +22,7 @@ export default function TransactionsChart({data}: IChartProps) {
     //console.log('totalInflow========', totalInflow);
     const totalOutflow: number = data.reduce((sum, curr) => {
       if (curr.type === 'outflow') {
-        sum += curr.value;
+        sum += curr.value * -1;
       }
       return sum;
     }, 0);
@@ -46,17 +46,24 @@ export default function TransactionsChart({data}: IChartProps) {
 
     return groupedList.map(item => ({
       ...item,
-      percentage:
-        Math.round(
+      percentage: Number(item.value.toFixed(2)),
+      /* Math.round(
           (item.value / (item.value < 0 ? totalOutflow : totalInflow)) *
             100 *
             100,
-        ) / 100,
+        ) / 100, */
     }));
   }
   const result = groupByAssetType(data);
   //console.log('TransactionChart===========', result);
-  return <DefaultChart data={result} xKey={'assetType'} yKeys={'percentage'} />;
+  return (
+    <DefaultChart
+      data={result}
+      xKey={'assetType'}
+      yKeys={'percentage'}
+      formatYLabelType={'currency'}
+    />
+  );
   return (
     <View
       style={{

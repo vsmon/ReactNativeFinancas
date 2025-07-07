@@ -1,4 +1,4 @@
-import {useFont} from '@shopify/react-native-skia';
+import {HAS_REANIMATED_3, useFont} from '@shopify/react-native-skia';
 import {View} from 'react-native';
 import {Bar, CartesianChart} from 'victory-native';
 import {IValues} from '../../Pages/Home';
@@ -8,9 +8,15 @@ interface IChartProps {
   data: IValues[] | {type: string; value: number}[];
   xKey: any;
   yKeys: any;
+  formatYLabelType: 'currency' | 'percentage';
 }
 
-export default function DefaultChart({data, xKey, yKeys}: IChartProps) {
+export default function DefaultChart({
+  data,
+  xKey,
+  yKeys,
+  formatYLabelType,
+}: IChartProps) {
   const font = useFont(inter, 12);
   return (
     <View
@@ -47,7 +53,8 @@ export default function DefaultChart({data, xKey, yKeys}: IChartProps) {
           {
             font,
             yKeys: [yKeys],
-            formatYLabel: value => `${value} %`,
+            formatYLabel: value =>
+              formatYLabelType === 'percentage' ? `${value} %` : `R$ ${value}`,
             tickCount: 5, // Número de marcações no eixo Y
             //lineColor: 'red', // Cor da linha do eixo Y
             labelColor: '#070707', // Cor dos rótulos do eixo Y
@@ -79,7 +86,11 @@ export default function DefaultChart({data, xKey, yKeys}: IChartProps) {
                 color={color}
                 /* value.yValue! < 0 ? 'red' : 'blue' */
                 //roundedCorners={{topLeft: 10, topRight: 10}}
-                labels={{position: 'top', color: '#000', font}}
+                labels={{
+                  position: value.yValue! >= 0 ? 'top' : 'bottom',
+                  color: '#000',
+                  font,
+                }}
                 //innerPadding={0.4}
                 animate={{type: 'spring', duration: 2000}}
                 /* animate={{type: 'timing', duration: 1000}} */

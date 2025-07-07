@@ -444,7 +444,7 @@ export default function Home({navigation}: IStackNavigationProps) {
         <InflowChart data={groupValues} />
         <Text style={styles.textTitle}>Receitas/Despesas</Text>
         <TransactionsChart data={groupValues} />
-        <FlowChart listData={groupValues} />
+        <FlowChart data={groupValues} />
       </View>
     </ScrollView>
   );

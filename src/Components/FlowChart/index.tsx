@@ -7,16 +7,16 @@ import DefaultChart from '../DefaultChart';
 const inter = require('../../../assets/fonts/roboto.ttf');
 
 interface IChartProps {
-  listData: IValues[];
+  data: IValues[];
 }
 
-export default function FlowChart({listData}: IChartProps) {
+export default function FlowChart({data}: IChartProps) {
   const font = useFont(inter, 12);
 
-  function groupByFlowType(data: IValues[]) {
+  function groupByFlowType(values: IValues[]) {
     let list: {type: string; value: number}[] = [];
 
-    const allOutflowData: IValues[] = data.filter(
+    const allOutflowData: IValues[] = values.filter(
       item => item.type === 'outflow',
     );
     const totalOutflow: number = allOutflowData.reduce(
@@ -24,7 +24,7 @@ export default function FlowChart({listData}: IChartProps) {
       0,
     );
 
-    const allInflowData: IValues[] = data.filter(
+    const allInflowData: IValues[] = values.filter(
       item => item.type === 'inflow',
     );
     const totalInflow: number = allInflowData.reduce(
@@ -40,8 +40,8 @@ export default function FlowChart({listData}: IChartProps) {
     return list;
   }
 
-  const data = groupByFlowType(listData);
-  /* return <DefaultChart data={result} xKey={'type'} yKeys={'value'} />; */
+  const listData = groupByFlowType(data);
+  /* return <DefaultChart data={listData} xKey={'type'} yKeys={'value'} />; */
   return (
     <View
       style={{
@@ -55,7 +55,7 @@ export default function FlowChart({listData}: IChartProps) {
         padding={{top: 5, bottom: 50, left: 5, right: 5}}
         //domain={{y: [0, 100]}}
         domainPadding={{left: 50, right: 50, top: 50}}
-        data={data.map(item => ({
+        data={listData.map(item => ({
           ...item,
           /* date: item.date.toISOString(), */
         }))}
@@ -98,7 +98,11 @@ export default function FlowChart({listData}: IChartProps) {
                 color={color}
                 /* value.yValue! < 0 ? 'red' : 'blue' */
                 //roundedCorners={{topLeft: 10, topRight: 10}}
-                labels={{position: 'top', color: '#000', font}}
+                labels={{
+                  position: value.yValue! >= 0 ? 'top' : 'bottom',
+                  color: '#000',
+                  font,
+                }}
                 //innerPadding={0.4}
                 animate={{type: 'spring', duration: 1000}}
                 /* animate={{type: 'timing', duration: 1000}} */

@@ -245,21 +245,41 @@ export default function InsertTransaction({
           }}
         />
         <Text style={styles.textLabel}>Entrada/Saída</Text>
-        <Picker
-          style={styles.textInput}
-          selectedValue={type}
-          onValueChange={value => setType(value)}>
-          <Picker.Item label="Entrada" value={'inflow'} />
-          <Picker.Item label="Saída" value={'outflow'} />
-        </Picker>
+        <View style={[styles.textInput, styles.pickerContainer]}>
+          <Picker
+            style={styles.textInput}
+            selectedValue={type}
+            onValueChange={value => setType(value)}>
+            <Picker.Item
+              style={styles.pickerItemText}
+              label="Entrada"
+              value={'inflow'}
+            />
+            <Picker.Item
+              style={styles.pickerItemText}
+              label="Saída"
+              value={'outflow'}
+            />
+          </Picker>
+        </View>
         <Text style={styles.textLabel}>Movimento Recorrente</Text>
-        <Picker
-          style={styles.textInput}
-          selectedValue={recurrence}
-          onValueChange={value => setRecurrence(value)}>
-          <Picker.Item label="Sim" value={'true'} />
-          <Picker.Item label="Não" value={'false'} />
-        </Picker>
+        <View style={[styles.textInput, styles.pickerContainer]}>
+          <Picker
+            style={styles.textInput}
+            selectedValue={recurrence}
+            onValueChange={value => setRecurrence(value)}>
+            <Picker.Item
+              style={styles.pickerItemText}
+              label="Sim"
+              value={'true'}
+            />
+            <Picker.Item
+              style={styles.pickerItemText}
+              label="Não"
+              value={'false'}
+            />
+          </Picker>
+        </View>
         <Text style={styles.textLabel}>Data final recorrência</Text>
         <TextInput
           style={styles.textInput}
@@ -282,16 +302,7 @@ export default function InsertTransaction({
           }}
         />
         <Text style={styles.textLabel}>Tipo do Ativo/Passivo</Text>
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'center',
-            alignItems: 'center',
-            backgroundColor: 'lightgray',
-            marginBottom: 10,
-            marginRight: 10,
-            marginLeft: 10,
-          }}>
+        <View style={styles.pickerContainer}>
           <Picker
             style={[styles.textInput, {marginBottom: 0}]}
             selectedValue={assetType}
@@ -299,6 +310,7 @@ export default function InsertTransaction({
             {allAssetsList?.map((asset, index) => {
               return (
                 <Picker.Item
+                  style={styles.pickerItemText}
                   key={index}
                   value={asset.value}
                   label={asset.label}
@@ -307,7 +319,12 @@ export default function InsertTransaction({
             })}
           </Picker>
           <Icon
-            style={{}}
+            style={{
+              fontWeight: 'bold',
+              borderRadius: 5,
+              backgroundColor: '#8d8d8d',
+              marginRight: 5,
+            }}
             name="plus"
             size={43}
             color={'#000'}
@@ -333,16 +350,9 @@ export default function InsertTransaction({
           onChangeText={value => setValue(value)}
         />
       </View>
-      <View>
+      <View style={styles.buttonSave}>
         <Pressable>
           <Icon
-            style={{
-              width: 60,
-              backgroundColor: 'lightgray',
-              borderRadius: 15,
-              margin: 15,
-              padding: 10,
-            }}
             name="content-save"
             size={40}
             color={'#000'}
@@ -355,47 +365,46 @@ export default function InsertTransaction({
 }
 
 const styles = StyleSheet.create({
-  textValues: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  itemContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 20,
-    margin: 5,
-    backgroundColor: 'lightgray',
-    borderRadius: 10,
-  },
-  balanceContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-    margin: 10,
-    marginBottom: 30,
-    backgroundColor: 'lightgray',
-    borderRadius: 10,
-  },
-  textBalance: {fontSize: 38},
-  groupBy: {
-    backgroundColor: 'lightgray',
-    borderRadius: 15,
-    padding: 5,
-    alignItems: 'center',
-    justifyContent: 'center',
-    margin: 10,
-  },
   textInput: {
     flex: 1,
-    backgroundColor: 'lightgray',
-    borderRadius: 5,
-    marginBottom: 10,
+    backgroundColor: 'white',
+    borderColor: 'lightgray',
+    borderWidth: 1,
+    borderRadius: 10,
     marginRight: 10,
     marginLeft: 10,
     color: '#000',
+    fontFamily: 'Roboto',
   },
   textLabel: {
     marginLeft: 10,
+    marginBottom: 5,
+    marginTop: 10,
     color: '#000',
+    fontFamily: 'Roboto',
+  },
+  pickerItemText: {
+    color: 'black',
+  },
+  pickerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderColor: 'lightgray',
+    borderWidth: 1,
+    marginBottom: 10,
+    marginRight: 10,
+    marginLeft: 10,
+    borderRadius: 10,
+  },
+  buttonSave: {
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: 'lightgray',
+    borderRadius: 10,
+    margin: 10,
+    padding: 5,
   },
 });

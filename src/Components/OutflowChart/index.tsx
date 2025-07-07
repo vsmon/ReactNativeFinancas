@@ -44,7 +44,14 @@ export default function OutflowChart({data}: IChartProps) {
   }
   const result = groupByAssetType(data);
   //console.log('TransactionChart===========', result);
-  return <DefaultChart data={result} xKey={'assetType'} yKeys={'percentage'} />;
+  return (
+    <DefaultChart
+      data={result}
+      xKey={'assetType'}
+      yKeys={'percentage'}
+      formatYLabelType="percentage"
+    />
+  );
   return (
     <View
       style={{

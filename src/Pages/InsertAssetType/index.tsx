@@ -83,7 +83,7 @@ export default function InsertAssetType() {
       </Text>
       <Text style={styles.textLabel}>Nome</Text>
       <TextInput
-        style={styles.input}
+        style={styles.textInput}
         placeholder="Nome..."
         placeholderTextColor={'#8d8d8d'}
         value={valueAsset}
@@ -92,7 +92,7 @@ export default function InsertAssetType() {
       />
       <Text style={styles.textLabel}>Descrição</Text>
       <TextInput
-        style={styles.input}
+        style={styles.textInput}
         placeholder="Descrição..."
         placeholderTextColor={'#8d8d8d'}
         value={labelAsset}
@@ -100,13 +100,7 @@ export default function InsertAssetType() {
         autoCapitalize="none"
       />
       <Icon
-        style={{
-          width: 60,
-          backgroundColor: 'lightgray',
-          borderRadius: 15,
-          margin: 15,
-          padding: 10,
-        }}
+        style={styles.buttonSave}
         name="content-save"
         size={40}
         color={'#000'}
@@ -165,19 +159,30 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
   },
-  input: {
-    height: 40,
-    borderColor: 'gray',
-    borderRadius: 5,
-    marginBottom: 10,
-    paddingLeft: 8,
-    margin: 10,
+  textInput: {
+    backgroundColor: 'white',
+    borderColor: 'lightgray',
+    borderWidth: 1,
+    borderRadius: 10,
+    marginRight: 10,
+    marginLeft: 10,
     color: '#000',
-    backgroundColor: 'lightgray',
+    fontFamily: 'Roboto',
   },
   textLabel: {
     marginLeft: 10,
-    fontSize: 14,
+    marginBottom: 5,
+    marginTop: 10,
     color: '#000',
+    fontFamily: 'Roboto',
+  },
+  buttonSave: {
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: 'lightgray',
+    borderRadius: 10,
+    margin: 10,
+    padding: 5,
   },
 });
